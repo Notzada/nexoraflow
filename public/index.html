@@ -800,11 +800,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 
   <!-- Menu "Mais" mobile -->
   <div id="mob-menu" style="display:none;position:fixed;bottom:64px;left:0;right:0;background:var(--surface);border-top:1px solid var(--border2);z-index:99;padding:8px 0;">
+
+    <!-- Perfil do usuário no menu mobile -->
+    <div onclick="showPage('profile',null);closeMobMenu()" style="display:flex;align-items:center;gap:12px;padding:14px 24px;border-bottom:1px solid var(--border);cursor:pointer;">
+      <div id="mob-avatar" style="width:38px;height:38px;border-radius:10px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background-size:cover;background-position:center;">🧑</div>
+      <div style="flex:1;">
+        <div id="mob-username" style="font-family:var(--font-display);font-size:12px;font-weight:700;">—</div>
+        <div id="mob-level" style="font-size:10px;color:var(--accent);">Nível 1</div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);">Ver perfil →</div>
+    </div>
+
+    <!-- Telegram Bot -->
+    <a id="mob-tg-link" href="#" target="_blank" style="display:flex;align-items:center;gap:10px;padding:14px 24px;border-bottom:1px solid var(--border);text-decoration:none;color:var(--accent);">
+      <div class="ws-dot"></div>
+      <span style="font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.5px;">Telegram Bot</span>
+    </a>
+
     <div class="mob-menu-item" onclick="showPage('agenda',null);closeMobMenu()">📅 Agenda</div>
     <div class="mob-menu-item" onclick="showPage('goals',null);closeMobMenu()">🎯 Metas</div>
     <div class="mob-menu-item" onclick="showPage('chat',null);closeMobMenu()">💬 Chat IA</div>
     <div class="mob-menu-item" onclick="showPage('verify',null);closeMobMenu()">✅ Verificações</div>
     <div class="mob-menu-item" onclick="showPage('settings',null);closeMobMenu()">⚙️ Configurações</div>
+    <div class="mob-menu-item" style="color:var(--red);" onclick="signOut()">⏻ Sair da conta</div>
   </div>
 </div>
 
@@ -1229,6 +1247,15 @@ function updateSidebarProfile() {
   document.getElementById('sidebar-level').textContent    = `Nível ${level}`;
   document.getElementById('sidebar-xp-bar').style.width   = pct + '%';
   document.getElementById('sidebar-xp-text').textContent  = `${currentProfile.xp || 0} XP`;
+  // Mobile menu
+  setAvatar(document.getElementById('mob-avatar'), currentProfile.avatar_emoji);
+  const mobUser = document.getElementById('mob-username');
+  const mobLvl  = document.getElementById('mob-level');
+  if (mobUser) mobUser.textContent = currentProfile.username || '';
+  if (mobLvl)  mobLvl.textContent  = `Nível ${level}`;
+  // Telegram link mobile
+  const mobTg = document.getElementById('mob-tg-link');
+  if (mobTg && TG_LINK) mobTg.href = TG_LINK;
 }
 
 // ============================================
