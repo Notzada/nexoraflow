@@ -950,7 +950,7 @@ app.post('/api/avatar', upload.single('file'), async (req, res) => {
 
   const { data: { publicUrl } } = supabaseAdmin.storage.from('avatars').getPublicUrl(filePath);
 
-  res.json({ url: publicUrl });
+  res.json({ url: publicUrl + '?t=' + Date.now() });
 });
 
 // ============================================
