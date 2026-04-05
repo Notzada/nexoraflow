@@ -3353,9 +3353,10 @@ async function toggleVoice() {
     return;
   }
 
-  // Solicita permissão de microfone explicitamente antes de iniciar
+  // Solicita permissão de microfone e libera o stream antes de iniciar SR
   try {
-    await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => t.stop()); // libera o stream para o SR usar
   } catch(e) {
     showToast('⚠️ Permissão de microfone negada. Habilite nas configurações do navegador.');
     return;
