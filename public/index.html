@@ -3359,40 +3359,63 @@ async function sendChat() {
   renderChat();
 }
 
-function toggleVoice() {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    showToast('Reconhecimento de voz não suportado neste navegador.');
+async function toggleVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    showToast('Seu navegador não suporta reconhecimento de voz. Use Chrome.');
     return;
   }
   if (isRecording) {
     speechRecognition?.stop();
     return;
   }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  // Solicita permissão de microfone explicitamente antes de iniciar
+  try {
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch(e) {
+    showToast('⚠️ Permissão de microfone negada. Habilite nas configurações do navegador.');
+    return;
+  }
+
   speechRecognition = new SR();
   speechRecognition.lang = 'pt-BR';
   speechRecognition.interimResults = false;
   speechRecognition.maxAlternatives = 1;
+  speechRecognition.continuous = false;
 
   speechRecognition.onstart = () => {
     isRecording = true;
     document.getElementById('chat-mic-btn')?.classList.add('recording');
     document.getElementById('jarvis-orb')?.classList.add('listening');
     setJarvisStatus('Ouvindo... fale agora 🎙️', false);
+    showToast('🎙️ Ouvindo...');
   };
   speechRecognition.onresult = (e) => {
     const txt = e.results[0][0].transcript;
     document.getElementById('chat-input').value = txt;
     sendChat();
   };
-  speechRecognition.onerror = () => showToast('Erro no microfone. Verifique as permissões.');
+  speechRecognition.onerror = (e) => {
+    const msgs = {
+      'not-allowed': '⚠️ Microfone bloqueado. Clique no ícone de cadeado na barra de endereço e permita o microfone.',
+      'no-speech': 'Nenhuma fala detectada. Tente novamente.',
+      'network': 'Erro de rede no reconhecimento de voz.',
+    };
+    showToast(msgs[e.error] || `Erro: ${e.error}`);
+  };
   speechRecognition.onend = () => {
     isRecording = false;
     document.getElementById('chat-mic-btn')?.classList.remove('recording');
     document.getElementById('jarvis-orb')?.classList.remove('listening');
     setJarvisStatus('Online · Pronto para ajudar', false);
   };
-  speechRecognition.start();
+
+  try {
+    speechRecognition.start();
+  } catch(e) {
+    showToast('Erro ao iniciar microfone: ' + e.message);
+  }
 }
 
 function initJarvis() {
