@@ -1122,16 +1122,13 @@ app.get('/health', (req, res) => {
 });
 
 // ============================================
-// API — JARVIS (Chat IA com ferramentas reais)
+// API — JARVIS (Chat IA com ferramentas reais — usa Gemini gratuito)
 // ============================================
-const Anthropic = require('@anthropic-ai/sdk');
-const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 const JARVIS_TOOLS = [
   {
     name: 'registrar_gasto',
     description: 'Registra um gasto/despesa do usuário. Use quando o usuário mencionar que gastou dinheiro em algo.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         amount: { type: 'number', description: 'Valor em reais (apenas número)' },
@@ -1144,7 +1141,7 @@ const JARVIS_TOOLS = [
   {
     name: 'marcar_habito',
     description: 'Marca um hábito como concluído hoje. Use quando o usuário disser que fez ou completou um hábito.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         habit_name: { type: 'string', description: 'Nome do hábito (ou parte do nome para busca)' },
@@ -1155,7 +1152,7 @@ const JARVIS_TOOLS = [
   {
     name: 'criar_tarefa',
     description: 'Cria uma nova tarefa/agenda para o usuário.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         text: { type: 'string', description: 'Descrição da tarefa' },
@@ -1169,7 +1166,7 @@ const JARVIS_TOOLS = [
   {
     name: 'consultar_dados',
     description: 'Consulta dados do usuário como gastos, hábitos, tarefas, XP ou perfil.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         tipo: { type: 'string', enum: ['gastos', 'habitos', 'tarefas', 'perfil'], description: 'Tipo de dado a consultar' },
@@ -1256,48 +1253,54 @@ app.post('/api/chat', express.json(), async (req, res) => {
   const { data: { user } } = await supabaseAdmin.auth.getUser(token);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { messages } = req.body; // array de { role, content }
+  const { messages } = req.body;
   if (!messages?.length) return res.status(400).json({ error: 'Mensagens vazias' });
-
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY não configurada no servidor.' });
-  }
 
   try {
     const today = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
-    let apiMessages = [...messages];
-    let finalReply = '';
-
-    // Loop agentico: Claude pode chamar ferramentas múltiplas vezes
-    for (let i = 0; i < 5; i++) {
-      const response = await anthropic.messages.create({
-        model: 'claude-haiku-4-5',
-        max_tokens: 1024,
-        system: `Você é o JARVIS, assistente pessoal inteligente do NexoraFlow. Hoje é ${today}.
+    const jarvisModel = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      systemInstruction: `Você é o JARVIS, assistente pessoal inteligente do NexoraFlow. Hoje é ${today}.
 Você ajuda o usuário a registrar gastos, marcar hábitos, criar tarefas e consultar seus dados.
 Seja conciso, amigável e use emojis moderadamente. Sempre confirme o que foi feito.
 Responda sempre em português brasileiro.`,
-        tools: JARVIS_TOOLS,
-        messages: apiMessages,
-      });
+      tools: [{ functionDeclarations: JARVIS_TOOLS }],
+    });
 
-      if (response.stop_reason === 'end_turn') {
-        finalReply = response.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    // Converter histórico para formato Gemini
+    const history = messages.slice(0, -1).map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+
+    const chat = jarvisModel.startChat({ history });
+    const lastMsg = messages[messages.length - 1].content;
+
+    let finalReply = '';
+
+    // Loop agentico: Gemini pode chamar ferramentas múltiplas vezes
+    let result = await chat.sendMessage(lastMsg);
+    for (let i = 0; i < 5; i++) {
+      const response = result.response;
+      const candidate = response.candidates?.[0];
+      const parts = candidate?.content?.parts || [];
+
+      const fnCalls = parts.filter(p => p.functionCall);
+      if (fnCalls.length === 0) {
+        finalReply = parts.filter(p => p.text).map(p => p.text).join('');
         break;
       }
 
-      if (response.stop_reason === 'tool_use') {
-        const toolUses = response.content.filter(b=>b.type==='tool_use');
-        apiMessages.push({ role: 'assistant', content: response.content });
-
-        const toolResults = [];
-        for (const tu of toolUses) {
-          const result = await executarFerramenta(tu.name, tu.input, user.id);
-          toolResults.push({ type: 'tool_result', tool_use_id: tu.id, content: result });
-        }
-        apiMessages.push({ role: 'user', content: toolResults });
+      // Executa as ferramentas e devolve resultados
+      const fnResponses = [];
+      for (const part of fnCalls) {
+        const { name, args } = part.functionCall;
+        const output = await executarFerramenta(name, args, user.id);
+        fnResponses.push({ functionResponse: { name, response: { output } } });
       }
+
+      result = await chat.sendMessage(fnResponses);
     }
 
     res.json({ reply: finalReply || 'Não consegui processar sua solicitação.' });
