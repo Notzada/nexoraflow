@@ -1681,6 +1681,7 @@ async function loadTasks() {
           <div class="task-text ${t.done?'done-text':''}">${t.text}</div>
           ${dueBadge}
           <span class="task-tag" style="background:rgba(255,255,255,.06);color:var(--muted)">${t.tag||'Geral'}</span>
+          <button class="habit-del-btn" title="Apagar tarefa" onclick="deleteTask('${t.id}','${t.text.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">✕</button>
         </div>`;
       }).join('')
     : '<div class="empty">Nenhuma tarefa. Clique em "+ Nova" ou mande "preciso..." no Telegram!</div>';
@@ -2077,6 +2078,14 @@ async function confirmEditCategory() {
   closeModal('modal-edit-cat');
   showToast('✏️ Categoria atualizada: ' + cat);
   loadDashboard(); loadExpenses();
+}
+
+async function deleteTask(id, text) {
+  if (!confirm(`Apagar a tarefa "${text}"?`)) return;
+  await supabaseClient.from('tasks').delete().eq('id', id);
+  showToast('🗑️ Tarefa removida.');
+  loadTasks();
+  if (document.getElementById('page-agenda').classList.contains('active')) loadAgenda();
 }
 
 async function deleteHabit(id, name) {
