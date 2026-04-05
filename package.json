@@ -8,6 +8,7 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.82.0",
     "@google/generative-ai": "^0.21.0",
     "@supabase/supabase-js": "^2.46.0",
     "dotenv": "^16.4.5",

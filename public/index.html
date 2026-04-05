@@ -100,8 +100,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 .exp-amount.out{color:var(--red)}.exp-amount.in{color:var(--accent)}
 .tg-badge-small{font-size:9px;color:var(--accent);background:rgba(168,85,247,.1);padding:2px 6px;border-radius:4px;margin-left:4px;}
 
-/* ======= CHAT ======= */
+/* ======= CHAT / JARVIS ======= */
 .chat-container{display:flex;flex-direction:column;height:calc(100vh - 140px);}
+.jarvis-header{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(168,85,247,.05);border:1px solid rgba(168,85,247,.15);border-radius:14px;margin-bottom:14px;}
+.jarvis-orb{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,rgba(168,85,247,.6),rgba(168,85,247,.1));border:1px solid rgba(168,85,247,.4);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;animation:orbPulse 3s ease-in-out infinite;}
+@keyframes orbPulse{0%,100%{box-shadow:0 0 0 0 rgba(168,85,247,.3);}50%{box-shadow:0 0 0 8px rgba(168,85,247,0);}}
+.jarvis-orb.listening{animation:orbListen .6s ease-in-out infinite alternate;background:radial-gradient(circle,rgba(239,68,68,.7),rgba(239,68,68,.1));border-color:rgba(239,68,68,.4);}
+@keyframes orbListen{from{box-shadow:0 0 0 0 rgba(239,68,68,.5);}to{box-shadow:0 0 0 12px rgba(239,68,68,0);}}
+.jarvis-info{flex:1;}
+.jarvis-name{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.5px;}
+.jarvis-status{font-size:10px;color:var(--muted);}
 .chat-messages{flex:1;overflow-y:auto;padding-right:4px;}
 .msg{display:flex;gap:10px;margin-bottom:16px;align-items:flex-start;}
 .msg.user{flex-direction:row-reverse;}
@@ -112,10 +120,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 .msg.user .msg-bubble{background:rgba(168,85,247,.08);border-color:rgba(168,85,247,.2);}
 .msg-time{font-size:9px;color:var(--muted);margin-top:4px;}
 .msg.user .msg-time{text-align:right;}
-.chat-input-area{display:flex;gap:10px;padding:16px 0 0;border-top:1px solid var(--border);margin-top:12px;}
+.msg-bubble.typing{display:flex;gap:4px;align-items:center;padding:14px;}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:typingBounce 1.2s infinite;}
+.typing-dot:nth-child(2){animation-delay:.2s;}
+.typing-dot:nth-child(3){animation-delay:.4s;}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-6px);}}
+.chat-input-area{display:flex;gap:8px;padding:16px 0 0;border-top:1px solid var(--border);margin-top:12px;align-items:center;}
 .chat-input{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text);outline:none;}
 .chat-input:focus{border-color:var(--accent);}
-.chat-send{background:var(--accent);color:#080c14;border:none;border-radius:10px;padding:10px 20px;font-family:var(--font-display);font-size:12px;font-weight:700;cursor:pointer;}
+.chat-send{background:var(--accent);color:#080c14;border:none;border-radius:10px;padding:10px 18px;font-family:var(--font-display);font-size:12px;font-weight:700;cursor:pointer;}
+.chat-mic{width:38px;height:38px;border:1px solid var(--border2);border-radius:10px;background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.chat-mic:hover{border-color:var(--accent);}
+.chat-mic.recording{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5);animation:micPulse .8s ease-in-out infinite;}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4);}50%{box-shadow:0 0 0 6px rgba(239,68,68,0);}}
 
 /* ======= METAS ======= */
 .goal-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px;}
@@ -648,13 +665,22 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     <!-- CHAT -->
     <div class="page" id="page-chat">
       <div class="page-header">
-        <div><div class="page-title">Chat IA</div><div class="page-subtitle">Consulte dados aqui ou mande para o Telegram</div></div>
-        <a class="tg-badge" id="tg-link2" href="#" target="_blank" style="font-size:11px;padding:6px 12px"><div class="ws-dot"></div>Abrir Telegram</a>
+        <div><div class="page-title">JARVIS</div><div class="page-subtitle">Assistente pessoal com IA</div></div>
       </div>
       <div class="chat-container">
+        <div class="jarvis-header">
+          <div class="jarvis-orb" id="jarvis-orb">🤖</div>
+          <div class="jarvis-info">
+            <div class="jarvis-name">JARVIS — NexoraFlow</div>
+            <div class="jarvis-status" id="jarvis-status">Online · Pronto para ajudar</div>
+          </div>
+        </div>
         <div class="chat-messages" id="chat-messages"></div>
         <div class="chat-input-area">
-          <input class="chat-input" id="chat-input" placeholder="quais meus gastos esta semana? / quanto gastei no total?" onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="chat-mic" id="chat-mic-btn" onclick="toggleVoice()" title="Falar por voz">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <input class="chat-input" id="chat-input" placeholder='Diga ou escreva: "gastei 30 reais no almoço"' onkeydown="if(event.key==='Enter')sendChat()">
           <button class="chat-send" onclick="sendChat()">Enviar</button>
         </div>
       </div>
@@ -1879,6 +1905,7 @@ function loadPage(id) {
   if(id==='ranking')  loadRanking();
   if(id==='verify')   loadVerifications();
   if(id==='events')   loadEvents();
+  if(id==='chat')     initJarvis();
   if(id==='profile')  loadProfile();
 }
 
@@ -3259,38 +3286,122 @@ function renderChat() {
   c.scrollTop=c.scrollHeight;
 }
 
+// ====== JARVIS ======
+let jarvisHistory = []; // histórico da conversa
+let isRecording = false;
+let speechRecognition = null;
+
+function renderChat() {
+  const el = document.getElementById('chat-messages');
+  if (!el) return;
+  el.innerHTML = jarvisHistory.map(m => {
+    if (m.role === 'typing') return `<div class="msg bot" id="typing-msg"><div class="msg-avatar bot">🤖</div><div class="msg-bubble typing"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div></div>`;
+    const isUser = m.role === 'user';
+    const time = m.time ? `<div class="msg-time">${m.time}</div>` : '';
+    const text = m.content.replace(/\n/g, '<br>');
+    return `<div class="msg ${isUser?'user':'bot'}">
+      <div class="msg-avatar ${isUser?'user-av':'bot'}">${isUser?'EU':'🤖'}</div>
+      <div><div class="msg-bubble">${text}</div>${time}</div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function setJarvisStatus(txt, busy) {
+  const s = document.getElementById('jarvis-status');
+  const o = document.getElementById('jarvis-orb');
+  if (s) s.textContent = txt;
+  if (o) o.style.opacity = busy ? '0.7' : '1';
+}
+
 async function sendChat() {
-  const inp=document.getElementById('chat-input'); if(!inp||!inp.value.trim()) return;
-  const txt=inp.value.trim(); inp.value='';
-  chatLog.push({role:'user',text:txt}); renderChat();
+  const inp = document.getElementById('chat-input');
+  if (!inp || !inp.value.trim()) return;
+  const txt = inp.value.trim(); inp.value = '';
+  const now = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
 
-  const l=txt.toLowerCase();
-  let reply='Não entendi. Tente: "quanto gastei esta semana?" ou "meus hábitos de hoje".';
+  jarvisHistory.push({ role: 'user', content: txt, time: now });
+  jarvisHistory.push({ role: 'typing' });
+  renderChat();
+  setJarvisStatus('Processando...', true);
 
-  if(l.includes('gasto')||l.includes('semana')||l.includes('quanto gastei')) {
-    const exp = await getExpensesThisMonth();
-    const total = exp.reduce((s,e)=>s+parseFloat(e.amount),0);
-    const byCat = exp.reduce((acc,e)=>{acc[e.category]=(acc[e.category]||0)+parseFloat(e.amount);return acc;},{});
-    const cats  = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`  • ${c}: R$${v.toFixed(2)}`).join('\n');
-    reply = `📊 Este mês você gastou R$${total.toFixed(2)} em ${exp.length} transações.\n\n${cats||'Sem categorias ainda.'}`;
-  } else if(l.includes('hábito')||l.includes('hoje')) {
-    const {habits,logs} = await getHabitsWithLogs();
-    const today = new Date().toISOString().split('T')[0];
-    const done  = logs.filter(l=>l.done_at===today);
-    const names = done.map(l=>habits.find(h=>h.id===l.habit_id)?.name).filter(Boolean);
-    reply = `🌟 Hábitos de hoje (${done.length}/${habits.length}):\n${names.map(n=>'  ✅ '+n).join('\n')||'  Nenhum ainda!'}`;
-  } else if(l.includes('meta')) {
-    const goals = await getGoals();
-    reply = goals.length
-      ? '🎯 Suas metas:\n'+goals.map(g=>`  • ${g.name}: ${Math.round(g.current/g.target*100)}% (R$${g.current}/R$${g.target})`).join('\n')
-      : '🎯 Nenhuma meta cadastrada ainda.';
-  } else if(l.includes('tarefa')||l.includes('task')) {
-    const tasks = await getTasks();
-    const done  = tasks.filter(t=>t.done);
-    reply = `📋 Tarefas: ${done.length}/${tasks.length} concluídas.\n${tasks.slice(0,5).map(t=>`  ${t.done?'✅':'⬜'} ${t.text}`).join('\n')}`;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const token = session?.access_token;
+
+  // Manda apenas mensagens reais (sem typing) para o backend
+  const apiMessages = jarvisHistory
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .map(m => ({ role: m.role, content: m.content }));
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ messages: apiMessages }),
+    });
+    const data = await res.json();
+    jarvisHistory = jarvisHistory.filter(m => m.role !== 'typing');
+    if (!res.ok) {
+      jarvisHistory.push({ role: 'assistant', content: `⚠️ ${data.error || 'Erro ao conectar com o JARVIS.'}`, time: now });
+    } else {
+      jarvisHistory.push({ role: 'assistant', content: data.reply, time: now });
+      // Atualiza dados locais se JARVIS registrou algo
+      if (data.reply.includes('registrado') || data.reply.includes('marcado') || data.reply.includes('criada')) {
+        setTimeout(() => { loadExpenses?.(); loadHabits?.(); loadTasks?.(); }, 1000);
+      }
+    }
+  } catch(e) {
+    jarvisHistory = jarvisHistory.filter(m => m.role !== 'typing');
+    jarvisHistory.push({ role: 'assistant', content: '⚠️ Erro de conexão. Tente novamente.', time: now });
   }
 
-  setTimeout(()=>{ chatLog.push({role:'bot',text:reply}); renderChat(); }, 500);
+  setJarvisStatus('Online · Pronto para ajudar', false);
+  renderChat();
+}
+
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Reconhecimento de voz não suportado neste navegador.');
+    return;
+  }
+  if (isRecording) {
+    speechRecognition?.stop();
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  speechRecognition = new SR();
+  speechRecognition.lang = 'pt-BR';
+  speechRecognition.interimResults = false;
+  speechRecognition.maxAlternatives = 1;
+
+  speechRecognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('chat-mic-btn')?.classList.add('recording');
+    document.getElementById('jarvis-orb')?.classList.add('listening');
+    setJarvisStatus('Ouvindo... fale agora 🎙️', false);
+  };
+  speechRecognition.onresult = (e) => {
+    const txt = e.results[0][0].transcript;
+    document.getElementById('chat-input').value = txt;
+    sendChat();
+  };
+  speechRecognition.onerror = () => showToast('Erro no microfone. Verifique as permissões.');
+  speechRecognition.onend = () => {
+    isRecording = false;
+    document.getElementById('chat-mic-btn')?.classList.remove('recording');
+    document.getElementById('jarvis-orb')?.classList.remove('listening');
+    setJarvisStatus('Online · Pronto para ajudar', false);
+  };
+  speechRecognition.start();
+}
+
+function initJarvis() {
+  jarvisHistory = [{
+    role: 'assistant',
+    content: '👋 Olá! Sou o JARVIS, seu assistente pessoal no NexoraFlow.\n\nPosso ajudar você a:\n• 💸 Registrar gastos — <i>"gastei 45 reais no almoço"</i>\n• ✅ Marcar hábitos — <i>"completei minha academia hoje"</i>\n• 📋 Criar tarefas — <i>"criar tarefa estudar amanhã às 19h"</i>\n• 📊 Consultar dados — <i>"quanto gastei esse mês?"</i>\n\nPode falar ou digitar! 🎙️',
+    time: new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}),
+  }];
+  renderChat();
 }
 
 // ============================================

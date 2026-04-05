@@ -1122,6 +1122,192 @@ app.get('/health', (req, res) => {
 });
 
 // ============================================
+// API — JARVIS (Chat IA com ferramentas reais)
+// ============================================
+const Anthropic = require('@anthropic-ai/sdk');
+const anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const JARVIS_TOOLS = [
+  {
+    name: 'registrar_gasto',
+    description: 'Registra um gasto/despesa do usuário. Use quando o usuário mencionar que gastou dinheiro em algo.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        amount: { type: 'number', description: 'Valor em reais (apenas número)' },
+        category: { type: 'string', description: 'Categoria: Alimentação, Transporte, Saúde, Lazer, Moradia, Educação, Roupas, Outros' },
+        description: { type: 'string', description: 'Descrição breve do gasto' },
+      },
+      required: ['amount', 'category', 'description'],
+    },
+  },
+  {
+    name: 'marcar_habito',
+    description: 'Marca um hábito como concluído hoje. Use quando o usuário disser que fez ou completou um hábito.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        habit_name: { type: 'string', description: 'Nome do hábito (ou parte do nome para busca)' },
+      },
+      required: ['habit_name'],
+    },
+  },
+  {
+    name: 'criar_tarefa',
+    description: 'Cria uma nova tarefa/agenda para o usuário.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: 'Descrição da tarefa' },
+        tag: { type: 'string', description: 'Tag: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros' },
+        due_date: { type: 'string', description: 'Data no formato YYYY-MM-DD (opcional)' },
+        due_time: { type: 'string', description: 'Horário no formato HH:MM (opcional)' },
+      },
+      required: ['text'],
+    },
+  },
+  {
+    name: 'consultar_dados',
+    description: 'Consulta dados do usuário como gastos, hábitos, tarefas, XP ou perfil.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        tipo: { type: 'string', enum: ['gastos', 'habitos', 'tarefas', 'perfil'], description: 'Tipo de dado a consultar' },
+      },
+      required: ['tipo'],
+    },
+  },
+];
+
+async function executarFerramenta(tool_name, tool_input, userId) {
+  try {
+    if (tool_name === 'registrar_gasto') {
+      const { amount, category, description } = tool_input;
+      const { error } = await supabaseAdmin.from('expenses').insert({
+        user_id: userId, amount, category, description,
+        date: new Date().toISOString().split('T')[0],
+      });
+      if (error) return `Erro ao registrar gasto: ${error.message}`;
+      return `Gasto de R$${amount.toFixed(2)} em ${category} (${description}) registrado com sucesso!`;
+    }
+
+    if (tool_name === 'marcar_habito') {
+      const { habit_name } = tool_input;
+      const { data: habits } = await supabaseAdmin.from('habits')
+        .select('id, name').eq('user_id', userId);
+      const match = habits?.find(h => h.name.toLowerCase().includes(habit_name.toLowerCase()));
+      if (!match) return `Hábito "${habit_name}" não encontrado. Seus hábitos: ${habits?.map(h=>h.name).join(', ') || 'nenhum'}`;
+      const today = new Date().toISOString().split('T')[0];
+      const { data: existing } = await supabaseAdmin.from('habit_logs')
+        .select('id').eq('habit_id', match.id).eq('done_at', today).single();
+      if (existing) return `Hábito "${match.name}" já foi marcado hoje!`;
+      await supabaseAdmin.from('habit_logs').insert({ habit_id: match.id, user_id: userId, done_at: today });
+      await addXP(supabaseAdmin, userId, 10, `Hábito: ${match.name}`);
+      return `Hábito "${match.name}" marcado como concluído! +10 XP`;
+    }
+
+    if (tool_name === 'criar_tarefa') {
+      const { text, tag, due_date, due_time } = tool_input;
+      const { error } = await supabaseAdmin.from('tasks').insert({
+        user_id: userId, text, tag: tag || 'Pessoal',
+        due_date: due_date || null, due_time: due_time || null, done: false,
+      });
+      if (error) return `Erro ao criar tarefa: ${error.message}`;
+      return `Tarefa "${text}" criada${due_date ? ` para ${due_date}` : ''}${due_time ? ` às ${due_time}` : ''}!`;
+    }
+
+    if (tool_name === 'consultar_dados') {
+      const { tipo } = tool_input;
+      if (tipo === 'gastos') {
+        const thisMonth = new Date().toISOString().slice(0, 7);
+        const { data } = await supabaseAdmin.from('expenses').select('*')
+          .eq('user_id', userId).gte('date', `${thisMonth}-01`);
+        const total = (data||[]).reduce((s,e)=>s+parseFloat(e.amount),0);
+        const byCat = (data||[]).reduce((acc,e)=>{acc[e.category]=(acc[e.category]||0)+parseFloat(e.amount);return acc;},{});
+        const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`${c}: R$${v.toFixed(2)}`).join(', ');
+        return `Este mês: R$${total.toFixed(2)} em ${(data||[]).length} transações. Por categoria: ${cats||'nenhuma'}`;
+      }
+      if (tipo === 'habitos') {
+        const { data: habits } = await supabaseAdmin.from('habits').select('id,name').eq('user_id', userId);
+        const today = new Date().toISOString().split('T')[0];
+        const { data: logs } = await supabaseAdmin.from('habit_logs').select('habit_id').eq('user_id', userId).eq('done_at', today);
+        const doneIds = new Set((logs||[]).map(l=>l.habit_id));
+        const list = (habits||[]).map(h=>`${doneIds.has(h.id)?'✅':'⬜'} ${h.name}`).join(', ');
+        return `Hábitos hoje: ${list || 'nenhum cadastrado'}`;
+      }
+      if (tipo === 'tarefas') {
+        const { data } = await supabaseAdmin.from('tasks').select('*').eq('user_id', userId).eq('done', false).order('created_at', {ascending:false}).limit(10);
+        return `Tarefas pendentes: ${(data||[]).map(t=>`${t.text}${t.due_date?` (${t.due_date})`:''}${t.due_time?` às ${t.due_time}`:''}`).join(', ') || 'nenhuma'}`;
+      }
+      if (tipo === 'perfil') {
+        const { data } = await supabaseAdmin.from('user_profiles').select('xp,level,username,streak').eq('id', userId).single();
+        return `${data?.username || 'Usuário'} — Nível ${data?.level||1}, ${data?.xp||0} XP, ${data?.streak||0} dias de streak`;
+      }
+    }
+    return 'Ferramenta desconhecida.';
+  } catch(e) {
+    return `Erro: ${e.message}`;
+  }
+}
+
+app.post('/api/chat', express.json(), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { messages } = req.body; // array de { role, content }
+  if (!messages?.length) return res.status(400).json({ error: 'Mensagens vazias' });
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY não configurada no servidor.' });
+  }
+
+  try {
+    const today = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+    let apiMessages = [...messages];
+    let finalReply = '';
+
+    // Loop agentico: Claude pode chamar ferramentas múltiplas vezes
+    for (let i = 0; i < 5; i++) {
+      const response = await anthropic.messages.create({
+        model: 'claude-haiku-4-5',
+        max_tokens: 1024,
+        system: `Você é o JARVIS, assistente pessoal inteligente do NexoraFlow. Hoje é ${today}.
+Você ajuda o usuário a registrar gastos, marcar hábitos, criar tarefas e consultar seus dados.
+Seja conciso, amigável e use emojis moderadamente. Sempre confirme o que foi feito.
+Responda sempre em português brasileiro.`,
+        tools: JARVIS_TOOLS,
+        messages: apiMessages,
+      });
+
+      if (response.stop_reason === 'end_turn') {
+        finalReply = response.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+        break;
+      }
+
+      if (response.stop_reason === 'tool_use') {
+        const toolUses = response.content.filter(b=>b.type==='tool_use');
+        apiMessages.push({ role: 'assistant', content: response.content });
+
+        const toolResults = [];
+        for (const tu of toolUses) {
+          const result = await executarFerramenta(tu.name, tu.input, user.id);
+          toolResults.push({ type: 'tool_result', tool_use_id: tu.id, content: result });
+        }
+        apiMessages.push({ role: 'user', content: toolResults });
+      }
+    }
+
+    res.json({ reply: finalReply || 'Não consegui processar sua solicitação.' });
+  } catch(e) {
+    console.error('[JARVIS ERROR]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================
 // INICIALIZAÇÃO
 // ============================================
 const PORT = process.env.PORT || 3000;
