@@ -2557,10 +2557,8 @@ async function openUserProfile(userId) {
 }
 
 async function sendFriendRequestTo(toId, username) {
-  // Remove qualquer request anterior (rejected) antes de inserir novo
-  await supabaseClient.from('friend_requests').delete().eq('from_id', currentUser.id).eq('to_id', toId);
-
-  const { error } = await supabaseClient.from('friend_requests').insert({ from_id: currentUser.id, to_id: toId });
+  const { error } = await supabaseClient.from('friend_requests')
+    .upsert({ from_id: currentUser.id, to_id: toId, status: 'pending' }, { onConflict: 'from_id,to_id' });
   if (error) { showToast('Erro ao enviar solicitação.'); return; }
 
   showToast(`📨 Solicitação enviada para ${username}!`);
@@ -2705,12 +2703,8 @@ async function addFriendByCode() {
     showToast('Solicitação já enviada, aguarde a resposta.'); btn.disabled = false; btn.textContent = '+ Adicionar'; return;
   }
 
-  // Remove request rejeitado anterior para poder reenviar
-  if (alreadySent) await supabaseClient.from('friend_requests').delete().eq('id', alreadySent.id);
-
-  const { error } = await supabaseClient.from('friend_requests').insert({
-    from_id: currentUser.id, to_id: friend.id,
-  });
+  const { error } = await supabaseClient.from('friend_requests')
+    .upsert({ from_id: currentUser.id, to_id: friend.id, status: 'pending' }, { onConflict: 'from_id,to_id' });
 
   if (error) {
     showToast('Erro ao enviar solicitação.'); btn.disabled = false; btn.textContent = '+ Adicionar'; return;
