@@ -288,6 +288,50 @@ create policy "achievements read all"
 create policy "achievements write own"
   on user_achievements for insert with check (auth.uid() = user_id);
 
+-- ============ HORÁRIO NAS TAREFAS v6 ============
+alter table tasks add column if not exists due_time text;
+
+-- ============ EVENTOS v6 ============
+
+create table if not exists events (
+  id          uuid default gen_random_uuid() primary key,
+  title       text not null,
+  description text,
+  xp_reward   int default 50,
+  starts_at   timestamptz default now(),
+  ends_at     timestamptz,
+  active      boolean default true,
+  created_at  timestamptz default now()
+);
+
+-- Submissões de prova por etapa do evento
+create table if not exists event_submissions (
+  id             uuid default gen_random_uuid() primary key,
+  event_id       uuid references events(id) on delete cascade,
+  user_id        uuid references auth.users(id) on delete cascade,
+  step           int not null default 1, -- 1=garrafinha cheia, 2=garrafinha vazia
+  photo_url      text,
+  status         text default 'pending', -- pending | approved | rejected
+  submitted_at   timestamptz default now(),
+  unique(event_id, user_id, step)
+);
+
+alter table events           enable row level security;
+alter table event_submissions enable row level security;
+
+create policy "events_read"   on events            for select using (auth.role() = 'authenticated');
+create policy "esub_read"     on event_submissions  for select using (auth.role() = 'authenticated');
+create policy "esub_insert"   on event_submissions  for insert with check (auth.uid() = user_id);
+
+-- Evento inicial: Desafio da Garrafinha
+insert into events (title, description, xp_reward, ends_at)
+values (
+  'Desafio da Garrafinha 💧',
+  'Beba 2L de água hoje! Envie uma foto da garrafinha cheia e depois vazia. Seus amigos precisam aprovar as duas provas.',
+  60,
+  now() + interval '7 days'
+) on conflict do nothing;
+
 -- ============ REALTIME ============
 
 do $$ begin alter publication supabase_realtime add table expenses;           exception when others then null; end $$;

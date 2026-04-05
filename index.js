@@ -954,6 +954,97 @@ app.post('/api/avatar', upload.single('file'), async (req, res) => {
 });
 
 // ============================================
+// API — EVENTOS: submeter prova por etapa
+// ============================================
+app.post('/api/event/submit', upload.single('file'), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { eventId, step } = req.body;
+  if (!eventId || !step || !req.file) return res.status(400).json({ error: 'Dados incompletos' });
+
+  // Verifica se evento existe e está ativo
+  const { data: event } = await supabaseAdmin.from('events').select('*').eq('id', eventId).eq('active', true).single();
+  if (!event) return res.status(404).json({ error: 'Evento não encontrado' });
+
+  // Upload da foto
+  const ext = req.file.originalname.split('.').pop().toLowerCase();
+  const filePath = `events/${eventId}/${user.id}_step${step}.${ext}`;
+  const { error: upErr } = await supabaseAdmin.storage
+    .from('avatars').upload(filePath, req.file.buffer, { upsert: true, contentType: req.file.mimetype });
+  if (upErr) return res.status(500).json({ error: upErr.message });
+
+  const { data: { publicUrl } } = supabaseAdmin.storage.from('avatars').getPublicUrl(filePath);
+
+  // Salva submissão
+  const { error: subErr } = await supabaseAdmin.from('event_submissions').upsert({
+    event_id: eventId, user_id: user.id, step: parseInt(step),
+    photo_url: publicUrl + '?t=' + Date.now(), status: 'pending',
+  }, { onConflict: 'event_id,user_id,step' });
+
+  if (subErr) return res.status(500).json({ error: subErr.message });
+
+  // Cria verificação para amigos aprovarem
+  const stepLabel = step == 1 ? 'Garrafinha CHEIA' : 'Garrafinha VAZIA';
+  const verificationId = require('crypto').randomUUID();
+  await supabaseAdmin.from('verifications').insert({
+    id: verificationId,
+    user_id: user.id,
+    type: 'event',
+    ref_id: eventId,
+    ref_name: `${event.title} — ${stepLabel}`,
+    photo_url: publicUrl + '?t=' + Date.now(),
+    xp_amount: Math.round(event.xp_reward / 2),
+    status: 'pending',
+  });
+
+  res.json({ ok: true, verificationId });
+});
+
+// API — EVENTOS: aprovar/rejeitar submissão (após votação)
+app.post('/api/event/finalize', express.json(), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { verificationId, verdict } = req.body; // verdict: 'approved' | 'rejected'
+  const { data: verif } = await supabaseAdmin.from('verifications').select('*').eq('id', verificationId).single();
+  if (!verif) return res.status(404).json({ error: 'Não encontrado' });
+
+  await supabaseAdmin.from('verifications').update({ status: verdict }).eq('id', verificationId);
+
+  if (verdict === 'approved') {
+    // Atualiza status da submissão
+    await supabaseAdmin.from('event_submissions')
+      .update({ status: 'approved' })
+      .eq('event_id', verif.ref_id).eq('user_id', verif.user_id);
+
+    // Verifica se ambas etapas foram aprovadas
+    const { data: subs } = await supabaseAdmin.from('event_submissions')
+      .select('step,status').eq('event_id', verif.ref_id).eq('user_id', verif.user_id);
+    const allDone = subs && subs.length >= 2 && subs.every(s => s.status === 'approved');
+
+    if (allDone) {
+      const { data: event } = await supabaseAdmin.from('events').select('xp_reward').eq('id', verif.ref_id).single();
+      if (event) {
+        await addXP(supabaseAdmin, verif.user_id, event.xp_reward, `Evento: ${verif.ref_name}`);
+        await addWeeklyXP(supabaseAdmin, verif.user_id, event.xp_reward);
+      }
+    } else {
+      // XP parcial por etapa aprovada
+      await addXP(supabaseAdmin, verif.user_id, verif.xp_amount, verif.ref_name);
+      await addWeeklyXP(supabaseAdmin, verif.user_id, verif.xp_amount);
+    }
+  }
+
+  res.json({ ok: true });
+});
+
+// ============================================
 // API — AMIGOS (requer service_role para insert bidirecional)
 // ============================================
 

@@ -317,6 +317,24 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 .conquest-xp{font-size:9px;font-weight:700;color:var(--accent);}
 .conquest-badge{position:absolute;top:-6px;right:-6px;background:var(--accent);color:#080c14;font-size:7px;font-family:var(--font-display);font-weight:700;padding:2px 5px;border-radius:8px;letter-spacing:.5px;}
 .conquest-category{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin:16px 0 8px;font-family:var(--font-display);}
+.event-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow:hidden;margin-bottom:20px;}
+.event-banner{background:linear-gradient(135deg,rgba(168,85,247,.2),rgba(0,212,255,.1));padding:24px;border-bottom:1px solid var(--border);}
+.event-title{font-family:var(--font-display);font-size:16px;font-weight:900;color:var(--text);margin-bottom:6px;}
+.event-desc{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px;}
+.event-meta{display:flex;gap:16px;font-size:10px;color:var(--muted);font-family:var(--font-display);}
+.event-xp{color:var(--accent);font-weight:700;}
+.event-steps{padding:20px 24px;}
+.event-step{display:flex;align-items:center;gap:14px;padding:14px;border-radius:12px;border:1px solid var(--border);margin-bottom:10px;background:rgba(255,255,255,.02);transition:border-color .2s;}
+.event-step.done{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.05);}
+.event-step.pending-approval{border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.05);}
+.event-step-num{width:32px;height:32px;border-radius:50%;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;}
+.event-step.done .event-step-num{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.3);color:#22c55e;}
+.event-step-info{flex:1;}
+.event-step-label{font-family:var(--font-display);font-size:11px;font-weight:700;margin-bottom:3px;}
+.event-step-sub{font-size:10px;color:var(--muted);}
+.event-step-btn{padding:7px 14px;border:none;border-radius:8px;font-family:var(--font-display);font-size:9px;font-weight:700;cursor:pointer;letter-spacing:.5px;}
+.event-step-btn.submit{background:var(--accent);color:#080c14;}
+.event-step-btn.done-btn{background:rgba(34,197,94,.15);color:#22c55e;cursor:default;}
 .emoji-pick-btn{width:100%;aspect-ratio:1;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:all .15s;}
 .emoji-pick-btn:hover{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.4);transform:scale(1.1);}
 .tag-grid{display:flex;flex-wrap:wrap;gap:8px;}
@@ -506,6 +524,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 9l4 4L14 4"/></svg>Verificações
       <span class="nav-badge" id="verify-badge" style="display:none">0</span>
     </div>
+    <div class="nav-item" onclick="showPage('events',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.5 3.5L8 10l-3 1.5.5-3.5L3 5.5 6.5 5z"/></svg>Eventos
+    </div>
     <div class="nav-section">Sistema</div>
     <div class="nav-item" onclick="showPage('settings',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M13.3 10a1.2 1.2 0 00.2 1.3l.04.04a1.45 1.45 0 11-2.05 2.05l-.04-.04a1.2 1.2 0 00-1.3-.2 1.2 1.2 0 00-.73 1.1v.12a1.45 1.45 0 11-2.9 0v-.06a1.2 1.2 0 00-.78-1.1 1.2 1.2 0 00-1.3.2l-.04.04a1.45 1.45 0 11-2.05-2.05l.04-.04a1.2 1.2 0 00.2-1.3 1.2 1.2 0 00-1.1-.73H1.45a1.45 1.45 0 010-2.9h.06a1.2 1.2 0 001.1-.78 1.2 1.2 0 00-.2-1.3l-.04-.04A1.45 1.45 0 114.42 2.1l.04.04a1.2 1.2 0 001.3.2h.06a1.2 1.2 0 00.73-1.1V1.12a1.45 1.45 0 012.9 0v.06a1.2 1.2 0 00.73 1.1 1.2 1.2 0 001.3-.2l.04-.04a1.45 1.45 0 112.05 2.05l-.04.04a1.2 1.2 0 00-.2 1.3v.06a1.2 1.2 0 001.1.73h.12a1.45 1.45 0 010 2.9h-.06a1.2 1.2 0 00-1.1.73z"/></svg>Configurações
@@ -672,6 +693,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     <div class="page" id="page-verify">
       <div class="page-header"><div><div class="page-title">Verificações</div><div class="page-subtitle">Aprove as provas dos seus amigos</div></div></div>
       <div id="verify-feed"><div class="verify-empty">Nenhuma prova pendente para revisar.</div></div>
+    </div>
+
+    <!-- EVENTOS -->
+    <div class="page" id="page-events">
+      <div class="page-header">
+        <div><div class="page-title">Eventos</div><div class="page-subtitle">Desafios comunitários com verificação</div></div>
+      </div>
+      <div id="events-list"><div class="loading"><div class="spin"></div>Carregando...</div></div>
     </div>
 
     <!-- CONFIGURAÇÕES -->
@@ -864,8 +893,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
       <option value="__custom__">+ Criar nova tag...</option>
     </select>
     <input class="modal-input" id="task-tag-custom" placeholder="Nome da nova tag..." style="display:none;margin-top:8px;" maxlength="20">
-    <div class="modal-label">Data limite (opcional)</div>
-    <input class="modal-input" id="task-date-input" type="date">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <div class="modal-label">Data (opcional)</div>
+        <input class="modal-input" id="task-date-input" type="date">
+      </div>
+      <div>
+        <div class="modal-label">Horário (opcional)</div>
+        <input class="modal-input" id="task-time-input" type="time">
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeModal('modal-task')">Cancelar</button>
       <button class="modal-confirm" onclick="confirmAddTask()">Adicionar →</button>
@@ -984,6 +1021,31 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     <div class="goal-alert-footer">
       <button class="goal-alert-all" onclick="dismissAllGoalAlerts()">Não mostrar nenhuma novamente</button>
       <button class="goal-alert-close" onclick="closeGoalAlerts()">Fechar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Submissão de Prova de Evento -->
+<div class="modal-overlay" id="modal-event-submit" style="display:none" onclick="if(event.target===this)closeModal('modal-event-submit')">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-title" id="event-submit-title">// Enviar Prova</div>
+    <div id="event-submit-desc" style="font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.6;"></div>
+
+    <div id="event-photo-preview" style="display:none;width:100%;max-height:220px;overflow:hidden;border-radius:10px;margin-bottom:12px;">
+      <img id="event-photo-img" style="width:100%;object-fit:cover;border-radius:10px;" src="">
+    </div>
+
+    <div onclick="document.getElementById('event-file-input').click()"
+      style="border:1.5px dashed rgba(168,85,247,.35);border-radius:10px;padding:24px;text-align:center;cursor:pointer;margin-bottom:16px;"
+      onmouseenter="this.style.borderColor='rgba(168,85,247,.7)'" onmouseleave="this.style.borderColor='rgba(168,85,247,.35)'">
+      <div style="font-size:28px;margin-bottom:6px;">📸</div>
+      <div style="font-family:var(--font-display);font-size:10px;color:var(--muted);">Clique para selecionar a foto</div>
+    </div>
+    <input type="file" id="event-file-input" accept="image/*" style="display:none" onchange="previewEventPhoto(event)">
+
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal('modal-event-submit')">Cancelar</button>
+      <button class="modal-confirm" id="event-submit-btn" onclick="submitEventProof()">Enviar Prova →</button>
     </div>
   </div>
 </div>
@@ -1703,8 +1765,9 @@ async function loadTasks() {
         let dueBadge = '';
         if (t.due_date) {
           const cls = t.due_date < today ? 'overdue' : t.due_date === today ? 'today' : 'future';
-          const label = t.due_date < today ? '⚠ Atrasada' : t.due_date === today ? '⏰ Hoje' : new Date(t.due_date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-          dueBadge = `<span class="task-due ${cls}">${label}</span>`;
+          const dateLabel = t.due_date < today ? '⚠ Atrasada' : t.due_date === today ? '⏰ Hoje' : new Date(t.due_date+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+          const timeLabel = t.due_time ? ` ${t.due_time.slice(0,5)}` : '';
+          dueBadge = `<span class="task-due ${cls}">${dateLabel}${timeLabel}</span>`;
         }
         _refNames[t.id] = t.text;
         return `<div class="task-item">
@@ -1811,6 +1874,7 @@ function loadPage(id) {
   if(id==='settings') loadSettings();
   if(id==='ranking')  loadRanking();
   if(id==='verify')   loadVerifications();
+  if(id==='events')   loadEvents();
   if(id==='profile')  loadProfile();
 }
 
@@ -2154,6 +2218,7 @@ function openAddTaskModal(dateStr='') {
   document.getElementById('task-tag-custom').style.display = 'none';
   document.getElementById('task-tag-custom').value = '';
   document.getElementById('task-date-input').value = dateStr;
+  document.getElementById('task-time-input').value = '';
   document.getElementById('modal-task').style.display = 'flex';
   setTimeout(()=>document.getElementById('task-text-input').focus(), 100);
 }
@@ -2176,6 +2241,7 @@ async function confirmAddTask() {
   let tag = sel === '__custom__' ? customVal : sel;
   if (!tag) tag = 'Geral';
   const due  = document.getElementById('task-date-input').value || null;
+  const time = document.getElementById('task-time-input').value || null;
   if (!text) return;
 
   // Se é tag nova, salva nas opções para próxima vez
@@ -2191,7 +2257,7 @@ async function confirmAddTask() {
     if (!saved.includes(customVal)) { saved.push(customVal); localStorage.setItem('custom_tags', JSON.stringify(saved)); }
   }
 
-  await supabaseClient.from('tasks').insert({ text, tag, due_date: due, user_id: currentUser.id });
+  await supabaseClient.from('tasks').insert({ text, tag, due_date: due, due_time: time, user_id: currentUser.id });
   closeModal('modal-task');
   showToast('✅ Tarefa adicionada!');
   loadTasks();
@@ -2740,6 +2806,132 @@ async function respondFriendRequest(requestId, action) {
   await renderFriendsList();
 }
 
+// ============================================
+// EVENTOS
+// ============================================
+let _currentEventId = null;
+let _currentEventStep = null;
+let _eventFile = null;
+
+async function loadEvents() {
+  const el = document.getElementById('events-list');
+  el.innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
+
+  const { data: events } = await supabaseClient.from('events').select('*').eq('active', true).order('created_at', { ascending: false });
+  if (!events || !events.length) {
+    el.innerHTML = '<div class="empty">Nenhum evento ativo no momento. Volte em breve! 🎪</div>';
+    return;
+  }
+
+  // Submissões do usuário atual
+  const eventIds = events.map(e => e.id);
+  const { data: mySubs } = await supabaseClient.from('event_submissions').select('*').eq('user_id', currentUser.id).in('event_id', eventIds);
+  const subMap = {};
+  (mySubs || []).forEach(s => { subMap[`${s.event_id}_${s.step}`] = s; });
+
+  el.innerHTML = events.map(ev => {
+    const endsAt = ev.ends_at ? new Date(ev.ends_at) : null;
+    const daysLeft = endsAt ? Math.max(0, Math.ceil((endsAt - Date.now()) / 86400000)) : null;
+
+    const step1 = subMap[`${ev.id}_1`];
+    const step2 = subMap[`${ev.id}_2`];
+
+    const stepHTML = (step, label, sub, emoji) => {
+      let statusClass = '', statusText = '', btnHTML = '';
+      if (!sub) {
+        statusText = 'Aguardando envio';
+        btnHTML = `<button class="event-step-btn submit" onclick="openEventSubmit('${ev.id}',${step},'${label}')">📸 Enviar</button>`;
+      } else if (sub.status === 'pending') {
+        statusClass = 'pending-approval';
+        statusText = 'Aguardando aprovação dos amigos';
+        btnHTML = `<button class="event-step-btn done-btn">⏳ Pendente</button>`;
+      } else if (sub.status === 'approved') {
+        statusClass = 'done';
+        statusText = 'Aprovado pelos amigos ✓';
+        btnHTML = `<button class="event-step-btn done-btn">✓ Concluído</button>`;
+      } else {
+        statusText = 'Rejeitado — tente novamente';
+        btnHTML = `<button class="event-step-btn submit" onclick="openEventSubmit('${ev.id}',${step},'${label}')">🔄 Reenviar</button>`;
+      }
+      return `<div class="event-step ${statusClass}">
+        <div class="event-step-num">${step}</div>
+        <div class="event-step-info">
+          <div class="event-step-label">${emoji} ${label}</div>
+          <div class="event-step-sub">${statusText}</div>
+        </div>
+        ${btnHTML}
+      </div>`;
+    };
+
+    return `<div class="event-card">
+      <div class="event-banner">
+        <div class="event-title">${ev.title}</div>
+        <div class="event-desc">${ev.description || ''}</div>
+        <div class="event-meta">
+          <span class="event-xp">⭐ +${ev.xp_reward} XP ao concluir</span>
+          ${daysLeft !== null ? `<span>⏰ ${daysLeft} dias restantes</span>` : ''}
+        </div>
+      </div>
+      <div class="event-steps">
+        ${stepHTML(1, 'Garrafinha CHEIA', step1, '🫙')}
+        ${stepHTML(2, 'Garrafinha VAZIA', step2, '💧')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openEventSubmit(eventId, step, label) {
+  _currentEventId = eventId;
+  _currentEventStep = step;
+  _eventFile = null;
+  document.getElementById('event-submit-title').textContent = `// Etapa ${step}: ${label}`;
+  document.getElementById('event-submit-desc').textContent =
+    step === 1
+      ? 'Tire uma foto mostrando sua garrafinha cheia antes de começar a beber.'
+      : 'Tire uma foto mostrando sua garrafinha vazia após terminar!';
+  document.getElementById('event-photo-preview').style.display = 'none';
+  document.getElementById('event-file-input').value = '';
+  document.getElementById('modal-event-submit').style.display = 'flex';
+}
+
+function previewEventPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  _eventFile = file;
+  const url = URL.createObjectURL(file);
+  document.getElementById('event-photo-img').src = url;
+  document.getElementById('event-photo-preview').style.display = 'block';
+}
+
+async function submitEventProof() {
+  if (!_eventFile) { showToast('Selecione uma foto primeiro!'); return; }
+
+  const btn = document.getElementById('event-submit-btn');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const token = session?.access_token;
+
+  const formData = new FormData();
+  formData.append('file', _eventFile);
+  formData.append('eventId', _currentEventId);
+  formData.append('step', _currentEventStep);
+
+  const res = await fetch('/api/event/submit', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData,
+  });
+
+  btn.disabled = false; btn.textContent = 'Enviar Prova →';
+
+  if (!res.ok) { showToast('Erro ao enviar prova.'); return; }
+
+  showToast('📸 Prova enviada! Aguardando aprovação dos amigos.');
+  closeModal('modal-event-submit');
+  loadEvents();
+}
+
 async function loadRanking() {
   const el = document.getElementById('ranking-list');
   el.innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
@@ -2913,7 +3105,7 @@ async function loadVerifications() {
     const approvals = votes.filter(vt => vt.vote === 'approve').length;
     const rejections = votes.filter(vt => vt.vote === 'reject').length;
     const voted = !!myVote;
-    const typeLabel = v.type === 'habit' ? 'HÁBITO' : 'TAREFA';
+    const typeLabel = v.type === 'habit' ? 'HÁBITO' : v.type === 'event' ? 'EVENTO ⚡' : 'TAREFA';
     const timeAgo = timeSince(v.created_at);
 
     return `<div class="verify-card">
@@ -2968,6 +3160,17 @@ async function voteVerification(verificationId, vote) {
   if (newStatus) {
     await supabaseClient.from('verifications').update({ status: newStatus }).eq('id', verificationId);
     showToast(newStatus === 'approved' ? '✅ Prova aprovada!' : '❌ Prova rejeitada pela maioria.');
+
+    // Se for prova de evento, notifica backend para conceder XP
+    const { data: verif } = await supabaseClient.from('verifications').select('type').eq('id', verificationId).single();
+    if (verif?.type === 'event') {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      fetch('/api/event/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ verificationId, verdict: newStatus }),
+      });
+    }
   } else {
     showToast(vote === 'approve' ? '✅ Voto registrado: aprovado' : '❌ Voto registrado: rejeitado');
   }
