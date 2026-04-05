@@ -853,7 +853,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     <div class="modal-label">Descrição</div>
     <input class="modal-input" id="task-text-input" placeholder="ex: Ligar para médico, Pagar conta...">
     <div class="modal-label">Tag</div>
-    <select class="modal-input" id="task-tag-input" style="cursor:pointer">
+    <select class="modal-input" id="task-tag-input" style="cursor:pointer" onchange="handleTagSelect(this)">
       <option value="Geral">Geral</option>
       <option value="Pessoal">Pessoal</option>
       <option value="Trabalho">Trabalho</option>
@@ -861,7 +861,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
       <option value="Casa">Casa</option>
       <option value="Finanças">Finanças</option>
       <option value="Estudos">Estudos</option>
+      <option value="__custom__">+ Criar nova tag...</option>
     </select>
+    <input class="modal-input" id="task-tag-custom" placeholder="Nome da nova tag..." style="display:none;margin-top:8px;" maxlength="20">
     <div class="modal-label">Data limite (opcional)</div>
     <input class="modal-input" id="task-date-input" type="date">
     <div class="modal-actions">
@@ -1763,7 +1765,7 @@ async function loadGoals() {
     : '<div class="empty">Nenhuma meta ainda. Clique em "+ Nova Meta"!</div>';
 }
 
-function loadAll() { loadDashboard(); }
+function loadAll() { loadDashboard(); loadCustomTags(); }
 function loadPage(id) {
   if(id==='habits')   loadHabits();
   if(id==='tasks')    loadTasks();
@@ -2109,21 +2111,62 @@ document.addEventListener('keydown', e => {
 function openAddTaskModal(dateStr='') {
   document.getElementById('task-text-input').value = '';
   document.getElementById('task-tag-input').value  = 'Geral';
+  document.getElementById('task-tag-custom').style.display = 'none';
+  document.getElementById('task-tag-custom').value = '';
   document.getElementById('task-date-input').value = dateStr;
   document.getElementById('modal-task').style.display = 'flex';
   setTimeout(()=>document.getElementById('task-text-input').focus(), 100);
 }
 
+function handleTagSelect(sel) {
+  const custom = document.getElementById('task-tag-custom');
+  if (sel.value === '__custom__') {
+    custom.style.display = 'block';
+    setTimeout(() => custom.focus(), 50);
+  } else {
+    custom.style.display = 'none';
+    custom.value = '';
+  }
+}
+
 async function confirmAddTask() {
   const text = document.getElementById('task-text-input').value.trim();
-  const tag  = document.getElementById('task-tag-input').value;
+  const sel  = document.getElementById('task-tag-input').value;
+  const customVal = document.getElementById('task-tag-custom').value.trim();
+  let tag = sel === '__custom__' ? customVal : sel;
+  if (!tag) tag = 'Geral';
   const due  = document.getElementById('task-date-input').value || null;
   if (!text) return;
+
+  // Se é tag nova, salva nas opções para próxima vez
+  if (sel === '__custom__' && customVal) {
+    const select = document.getElementById('task-tag-input');
+    const exists = Array.from(select.options).some(o => o.value === customVal);
+    if (!exists) {
+      const opt = new Option(customVal, customVal);
+      select.insertBefore(opt, select.querySelector('[value="__custom__"]'));
+    }
+    // Persiste no localStorage
+    const saved = JSON.parse(localStorage.getItem('custom_tags') || '[]');
+    if (!saved.includes(customVal)) { saved.push(customVal); localStorage.setItem('custom_tags', JSON.stringify(saved)); }
+  }
+
   await supabaseClient.from('tasks').insert({ text, tag, due_date: due, user_id: currentUser.id });
   closeModal('modal-task');
   showToast('✅ Tarefa adicionada!');
   loadTasks();
   if (document.getElementById('page-agenda').classList.contains('active')) loadAgenda();
+}
+
+// Carrega tags customizadas salvas no localStorage
+function loadCustomTags() {
+  const saved = JSON.parse(localStorage.getItem('custom_tags') || '[]');
+  const select = document.getElementById('task-tag-input');
+  const customOpt = select.querySelector('[value="__custom__"]');
+  saved.forEach(tag => {
+    const exists = Array.from(select.options).some(o => o.value === tag);
+    if (!exists) select.insertBefore(new Option(tag, tag), customOpt);
+  });
 }
 
 // alias antigo para não quebrar botão de tarefas
