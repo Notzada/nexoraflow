@@ -850,6 +850,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V9M6 14V5M10 14V7M14 14V2"/></svg>
       <span>Ranking</span>
     </div>
+    <div class="mob-item" onclick="showPage('chat',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10a9.96 9.96 0 0 1-4.9-1.28L2 22l1.28-5.1A9.96 9.96 0 0 1 2 12 10 10 0 0 1 12 2z"/><circle cx="8" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="16" cy="12" r="1" fill="currentColor"/></svg>
+      <span>JARVIS</span>
+    </div>
     <div class="mob-item" onclick="toggleMobMenu()">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="3" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="13" r="1.2" fill="currentColor"/></svg>
       <span>Mais</span>
@@ -1272,7 +1276,6 @@ function startApp() {
   showScreen('app');
   loadAll();
   subscribeRealtime();
-  initChat();
   checkGoalAlerts();
   processMyVerificationResults();
   updateVerifyBadge();
@@ -3264,26 +3267,6 @@ function timeSince(dateStr) {
   if (s < 3600)  return `${Math.floor(s/60)} min atrás`;
   if (s < 86400) return `${Math.floor(s/3600)} h atrás`;
   return `${Math.floor(s/86400)} d atrás`;
-}
-
-// ============================================
-// CHAT IA (consulta local com dados reais)
-// ============================================
-const chatLog = [];
-
-function initChat() {
-  chatLog.push({role:'bot',text:'Olá! 👋 Consulte seus dados aqui ou mande mensagens no Telegram para registrar gastos e hábitos!'});
-  renderChat();
-}
-
-function renderChat() {
-  const c=document.getElementById('chat-messages'); if(!c) return;
-  c.innerHTML=chatLog.map(m=>`<div class="msg ${m.role==='user'?'user':''}">
-    <div class="msg-avatar ${m.role==='user'?'user-av':'bot'}">${m.role==='user'?'EU':'NX'}</div>
-    <div><div class="msg-bubble">${m.text.replace(/\n/g,'<br>')}</div>
-    <div class="msg-time">${m.role==='bot'?'NexoraFlow AI':'Você'}</div></div>
-  </div>`).join('');
-  c.scrollTop=c.scrollHeight;
 }
 
 // ====== JARVIS ======
