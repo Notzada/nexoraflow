@@ -987,8 +987,14 @@ app.post('/api/event/submit', upload.single('file'), async (req, res) => {
 
   if (subErr) return res.status(500).json({ error: subErr.message });
 
-  // Cria verificação para amigos aprovarem
+  // Cancela verificações anteriores desse step (reenvio após rejeição)
   const stepLabel = step == 1 ? 'Garrafinha CHEIA' : 'Garrafinha VAZIA';
+  await supabaseAdmin.from('verifications')
+    .update({ status: 'done' })
+    .eq('user_id', user.id).eq('type', 'event').eq('ref_id', eventId)
+    .ilike('ref_name', `%${stepLabel}%`);
+
+  // Cria nova verificação para amigos aprovarem
   const verificationId = require('crypto').randomUUID();
   await supabaseAdmin.from('verifications').insert({
     id: verificationId,
@@ -1017,11 +1023,14 @@ app.post('/api/event/finalize', express.json(), async (req, res) => {
 
   await supabaseAdmin.from('verifications').update({ status: verdict }).eq('id', verificationId);
 
+  // Determina qual step esta verificação pertence (CHEIA=1, VAZIA=2)
+  const step = verif.ref_name && verif.ref_name.includes('CHEIA') ? 1 : 2;
+
   if (verdict === 'approved') {
-    // Atualiza status da submissão
+    // Atualiza apenas o step correto
     await supabaseAdmin.from('event_submissions')
       .update({ status: 'approved' })
-      .eq('event_id', verif.ref_id).eq('user_id', verif.user_id);
+      .eq('event_id', verif.ref_id).eq('user_id', verif.user_id).eq('step', step);
 
     // Verifica se ambas etapas foram aprovadas
     const { data: subs } = await supabaseAdmin.from('event_submissions')
@@ -1039,6 +1048,11 @@ app.post('/api/event/finalize', express.json(), async (req, res) => {
       await addXP(supabaseAdmin, verif.user_id, verif.xp_amount, verif.ref_name);
       await addWeeklyXP(supabaseAdmin, verif.user_id, verif.xp_amount);
     }
+  } else {
+    // Rejeitado: marca submission como rejected para o usuário poder reenviar
+    await supabaseAdmin.from('event_submissions')
+      .update({ status: 'rejected' })
+      .eq('event_id', verif.ref_id).eq('user_id', verif.user_id).eq('step', step);
   }
 
   res.json({ ok: true });
