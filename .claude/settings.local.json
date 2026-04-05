@@ -12,7 +12,8 @@
       "Bash(cmd /c \"taskkill /IM node.exe /F\")",
       "Bash(npx kill-port:*)",
       "Bash(npx is-port-reachable:*)",
-      "Bash(curl -s http://localhost:3000/health)"
+      "Bash(curl -s http://localhost:3000/health)",
+      "Bash(npm install:*)"
     ]
   }
 }

@@ -925,6 +925,35 @@ app.post('/webhook', async (req, res) => {
 });
 
 // ============================================
+// API — UPLOAD DE AVATAR (usa service_role para bypassar RLS do Storage)
+// ============================================
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
+
+app.post('/api/avatar', upload.single('file'), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  if (!req.file) return res.status(400).json({ error: 'No file' });
+
+  const ext = req.file.originalname.split('.').pop().toLowerCase();
+  const filePath = `${user.id}/avatar.${ext}`;
+
+  const { error: upErr } = await supabaseAdmin.storage
+    .from('avatars')
+    .upload(filePath, req.file.buffer, { upsert: true, contentType: req.file.mimetype });
+
+  if (upErr) return res.status(500).json({ error: upErr.message });
+
+  const { data: { publicUrl } } = supabaseAdmin.storage.from('avatars').getPublicUrl(filePath);
+
+  res.json({ url: publicUrl });
+});
+
+// ============================================
 // API — AMIGOS (requer service_role para insert bidirecional)
 // ============================================
 

@@ -1015,6 +1015,32 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
   </div>
 </div>
 
+<!-- Modal: Perfil de Usuário -->
+<div class="modal-overlay" id="modal-user-profile" style="display:none" onclick="if(event.target===this)closeModal('modal-user-profile')">
+  <div class="modal-box" style="max-width:380px;">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+      <div id="up-avatar" style="width:60px;height:60px;border-radius:14px;background:rgba(168,85,247,.15);border:2px solid rgba(168,85,247,.3);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;background-size:cover;background-position:center;"></div>
+      <div style="flex:1;">
+        <div id="up-username" style="font-family:var(--font-display);font-size:16px;font-weight:900;margin-bottom:4px;">—</div>
+        <div id="up-level" style="font-size:11px;color:var(--accent);font-family:var(--font-display);">Nível 1</div>
+        <div id="up-xp" style="font-size:10px;color:var(--muted);margin-top:2px;">0 XP</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:20px;">
+      <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">
+        <div id="up-streak" style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--amber);">0</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">🔥 Streak</div>
+      </div>
+      <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">
+        <div id="up-conquests" style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--accent);">0</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px;">🏆 Conquistas</div>
+      </div>
+    </div>
+    <div id="up-action" style="margin-bottom:8px;"></div>
+    <button class="modal-cancel" onclick="closeModal('modal-user-profile')" style="width:100%;">Fechar</button>
+  </div>
+</div>
+
 <!-- Modal: Amigos -->
 <div class="modal-overlay" id="modal-friends" style="display:none" onclick="if(event.target===this)closeModal('modal-friends')">
   <div class="modal-box" style="max-width:480px;">
@@ -1326,17 +1352,22 @@ function selectEmoji(e) {
 async function handleAvatarUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
-  if (file.size > 1024 * 1024) { showToast('Foto muito grande. Máx: 1MB'); return; }
+  if (file.size > 2 * 1024 * 1024) { showToast('Foto muito grande. Máx: 2MB'); return; }
 
-  const ext = file.name.split('.').pop();
-  const filePath = `${currentUser.id}/avatar.${ext}`;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const token = session?.access_token;
 
-  const { error: upErr } = await supabaseClient.storage
-    .from('avatars').upload(filePath, file, { upsert: true, contentType: file.type });
+  const formData = new FormData();
+  formData.append('file', file);
 
-  if (upErr) { showToast('Erro: ' + upErr.message); return; }
+  const res = await fetch('/api/avatar', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData,
+  });
 
-  const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(filePath);
+  if (!res.ok) { showToast('Erro ao enviar foto.'); return; }
+  const { url: publicUrl } = await res.json();
 
   // Salva URL no campo e preview
   document.getElementById('set-emoji').value = publicUrl;
@@ -2491,6 +2522,52 @@ function copyProfileCode() {
   navigator.clipboard.writeText(code).then(() => showToast('Código copiado!'));
 }
 
+async function openUserProfile(userId) {
+  document.getElementById('modal-user-profile').style.display = 'flex';
+  document.getElementById('up-username').textContent = '...';
+  document.getElementById('up-action').innerHTML = '';
+
+  const [{ data: p }, { data: ach }, { data: isFriend }, { data: pendingReq }] = await Promise.all([
+    supabaseClient.from('user_profiles').select('username,avatar_emoji,xp,level,streak').eq('id', userId).single(),
+    supabaseClient.from('user_achievements').select('id', { count: 'exact', head: false }).eq('user_id', userId),
+    supabaseClient.from('friends').select('id').eq('user_id', currentUser.id).eq('friend_id', userId).maybeSingle(),
+    supabaseClient.from('friend_requests').select('id,status').eq('from_id', currentUser.id).eq('to_id', userId).maybeSingle(),
+  ]);
+
+  if (!p) return;
+  const { level } = getXPProgress(p.xp || 0);
+
+  setAvatar(document.getElementById('up-avatar'), p.avatar_emoji);
+  document.getElementById('up-username').textContent = p.username || '—';
+  document.getElementById('up-level').textContent    = `Nível ${level}`;
+  document.getElementById('up-xp').textContent       = `${p.xp || 0} XP`;
+  document.getElementById('up-streak').textContent   = p.streak || 0;
+  document.getElementById('up-conquests').textContent = ach?.length || 0;
+
+  const actionEl = document.getElementById('up-action');
+  if (userId === currentUser.id) {
+    actionEl.innerHTML = `<button class="modal-confirm" onclick="closeModal('modal-user-profile');showPage('profile',null);" style="width:100%;">Ver meu perfil</button>`;
+  } else if (isFriend) {
+    actionEl.innerHTML = `<div style="text-align:center;font-size:11px;color:var(--accent);padding:8px;background:rgba(168,85,247,.08);border-radius:8px;">✓ Vocês já são amigos</div>`;
+  } else if (pendingReq && pendingReq.status === 'pending') {
+    actionEl.innerHTML = `<div style="text-align:center;font-size:11px;color:var(--muted);padding:8px;background:rgba(255,255,255,.03);border-radius:8px;">📨 Solicitação enviada — aguardando resposta</div>`;
+  } else {
+    actionEl.innerHTML = `<button class="modal-confirm" onclick="sendFriendRequestTo('${userId}','${p.username}')" style="width:100%;">+ Adicionar como amigo</button>`;
+  }
+}
+
+async function sendFriendRequestTo(toId, username) {
+  // Remove qualquer request anterior (rejected) antes de inserir novo
+  await supabaseClient.from('friend_requests').delete().eq('from_id', currentUser.id).eq('to_id', toId);
+
+  const { error } = await supabaseClient.from('friend_requests').insert({ from_id: currentUser.id, to_id: toId });
+  if (error) { showToast('Erro ao enviar solicitação.'); return; }
+
+  showToast(`📨 Solicitação enviada para ${username}!`);
+  document.getElementById('up-action').innerHTML =
+    `<div style="text-align:center;font-size:11px;color:var(--muted);padding:8px;background:rgba(255,255,255,.03);border-radius:8px;">📨 Solicitação enviada — aguardando resposta</div>`;
+}
+
 async function openFriendsModal() {
   document.getElementById('modal-friends').style.display = 'flex';
   document.getElementById('friend-code-input').value = '';
@@ -2621,12 +2698,15 @@ async function addFriendByCode() {
     showToast(`Você já é amigo de ${friend.username}.`); btn.disabled = false; btn.textContent = '+ Adicionar'; return;
   }
 
-  // Já enviou pedido?
+  // Já enviou pedido pendente?
   const { data: alreadySent } = await supabaseClient
-    .from('friend_requests').select('id').eq('from_id', currentUser.id).eq('to_id', friend.id).eq('status', 'pending').maybeSingle();
-  if (alreadySent) {
+    .from('friend_requests').select('id,status').eq('from_id', currentUser.id).eq('to_id', friend.id).maybeSingle();
+  if (alreadySent?.status === 'pending') {
     showToast('Solicitação já enviada, aguarde a resposta.'); btn.disabled = false; btn.textContent = '+ Adicionar'; return;
   }
+
+  // Remove request rejeitado anterior para poder reenviar
+  if (alreadySent) await supabaseClient.from('friend_requests').delete().eq('id', alreadySent.id);
 
   const { error } = await supabaseClient.from('friend_requests').insert({
     from_id: currentUser.id, to_id: friend.id,
@@ -2679,7 +2759,7 @@ async function loadRanking() {
     const isMe  = p.id === currentUser.id;
     const { level, pct } = getXPProgress(p.xp || 0);
     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `<span style="font-family:var(--font-display);font-size:11px;color:var(--muted)">#${i+1}</span>`;
-    return `<div class="rank-item ${isMe ? 'rank-me' : ''}">
+    return `<div class="rank-item ${isMe ? 'rank-me' : ''}" onclick="openUserProfile('${p.id}')" style="cursor:pointer;">
       <div class="rank-pos">${medal}</div>
       ${avatarHTML(p.avatar_emoji, 36, 10)}
       <div class="rank-info">
