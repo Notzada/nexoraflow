@@ -989,10 +989,13 @@ app.post('/api/event/submit', upload.single('file'), async (req, res) => {
 
   // Cancela verificações anteriores desse step (reenvio após rejeição)
   const stepLabel = step == 1 ? 'Garrafinha CHEIA' : 'Garrafinha VAZIA';
-  await supabaseAdmin.from('verifications')
-    .update({ status: 'done' })
-    .eq('user_id', user.id).eq('type', 'event').eq('ref_id', eventId)
-    .ilike('ref_name', `%${stepLabel}%`);
+  const fullRefName = `${event.title} — ${stepLabel}`;
+  try {
+    await supabaseAdmin.from('verifications')
+      .update({ status: 'done' })
+      .eq('user_id', user.id).eq('type', 'event').eq('ref_id', eventId)
+      .eq('ref_name', fullRefName).neq('status', 'done');
+  } catch(_) {}
 
   // Cria nova verificação para amigos aprovarem
   const verificationId = require('crypto').randomUUID();
@@ -1001,7 +1004,7 @@ app.post('/api/event/submit', upload.single('file'), async (req, res) => {
     user_id: user.id,
     type: 'event',
     ref_id: eventId,
-    ref_name: `${event.title} — ${stepLabel}`,
+    ref_name: fullRefName,
     photo_url: publicUrl + '?t=' + Date.now(),
     xp_amount: Math.round(event.xp_reward / 2),
     status: 'pending',
