@@ -1677,7 +1677,7 @@ async function loadTasks() {
         }
         _refNames[t.id] = t.text;
         return `<div class="task-item">
-          <div class="task-check ${t.done?'done':''}" onclick="toggleTask('${t.id}',${!t.done},this)">${t.done?'✓':''}</div>
+          <div class="task-check ${t.done?'done':''}" onclick="toggleTask('${t.id}',!this.classList.contains('done'),this)">${t.done?'✓':''}</div>
           <div class="task-text ${t.done?'done-text':''}">${t.text}</div>
           ${dueBadge}
           <span class="task-tag" style="background:rgba(255,255,255,.06);color:var(--muted)">${t.tag||'Geral'}</span>
