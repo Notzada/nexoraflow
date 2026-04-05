@@ -3342,7 +3342,7 @@ async function sendChat() {
   renderChat();
 }
 
-async function toggleVoice() {
+function toggleVoice() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
     showToast('Seu navegador não suporta reconhecimento de voz. Use Chrome.');
@@ -3350,15 +3350,6 @@ async function toggleVoice() {
   }
   if (isRecording) {
     speechRecognition?.stop();
-    return;
-  }
-
-  // Solicita permissão de microfone e libera o stream antes de iniciar SR
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach(t => t.stop()); // libera o stream para o SR usar
-  } catch(e) {
-    showToast('⚠️ Permissão de microfone negada. Habilite nas configurações do navegador.');
     return;
   }
 
