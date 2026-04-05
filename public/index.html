@@ -1266,7 +1266,7 @@ async function createProfile() {
 
 function startApp() {
   document.getElementById('tg-link').href  = TG_LINK;
-  document.getElementById('tg-link2').href = TG_LINK;
+  const tgl2 = document.getElementById('tg-link2'); if(tgl2) tgl2.href = TG_LINK;
   document.getElementById('dash-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   updateSidebarProfile();
   showScreen('app');
