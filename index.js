@@ -1268,11 +1268,14 @@ Responda sempre em português brasileiro.`,
       tools: [{ functionDeclarations: JARVIS_TOOLS }],
     });
 
-    // Converter histórico para formato Gemini
-    const history = messages.slice(0, -1).map(m => ({
+    // Converter histórico para formato Gemini (deve começar com 'user')
+    const allMsgs = messages.slice(0, -1).map(m => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }],
     }));
+    // Remove mensagens iniciais do model até encontrar o primeiro user
+    const firstUserIdx = allMsgs.findIndex(m => m.role === 'user');
+    const history = firstUserIdx >= 0 ? allMsgs.slice(firstUserIdx) : [];
 
     const chat = jarvisModel.startChat({ history });
     const lastMsg = messages[messages.length - 1].content;
