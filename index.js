@@ -1134,6 +1134,7 @@ const JARVIS_TOOLS = [
         amount: { type: 'number', description: 'Valor em reais (apenas número)' },
         category: { type: 'string', description: 'Categoria: Alimentação, Transporte, Saúde, Lazer, Moradia, Educação, Roupas, Outros' },
         description: { type: 'string', description: 'Descrição breve do gasto' },
+        date: { type: 'string', description: 'Data no formato YYYY-MM-DD. Se o usuário disser "ontem" calcule a data correta. Padrão: hoje.' },
       },
       required: ['amount', 'category', 'description'],
     },
@@ -1179,10 +1180,11 @@ const JARVIS_TOOLS = [
 async function executarFerramenta(tool_name, tool_input, userId) {
   try {
     if (tool_name === 'registrar_gasto') {
-      const { amount, category, description } = tool_input;
+      const { category, description } = tool_input;
+      const amount = parseFloat(tool_input.amount);
+      const date = tool_input.date || new Date().toISOString().split('T')[0];
       const { error } = await supabaseAdmin.from('expenses').insert({
-        user_id: userId, amount, category, description,
-        date: new Date().toISOString().split('T')[0],
+        user_id: userId, amount, category, description, date,
       });
       if (error) return `Erro ao registrar gasto: ${error.message}`;
       return `Gasto de R$${amount.toFixed(2)} em ${category} (${description}) registrado com sucesso!`;
