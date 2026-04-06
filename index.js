@@ -1178,6 +1178,7 @@ const JARVIS_TOOLS = [
 ];
 
 async function executarFerramenta(tool_name, tool_input, userId) {
+  console.log('[JARVIS TOOL]', tool_name, JSON.stringify(tool_input), 'userId:', userId);
   try {
     if (tool_name === 'registrar_gasto') {
       const { category, description } = tool_input;
