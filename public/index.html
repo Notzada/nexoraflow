@@ -665,13 +665,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     <!-- CHAT -->
     <div class="page" id="page-chat">
       <div class="page-header">
-        <div><div class="page-title">JARVIS</div><div class="page-subtitle">Assistente pessoal com IA</div></div>
+        <div><div class="page-title">NEXO</div><div class="page-subtitle">Assistente pessoal com IA</div></div>
       </div>
       <div class="chat-container">
         <div class="jarvis-header">
           <div class="jarvis-orb" id="jarvis-orb">🤖</div>
           <div class="jarvis-info">
-            <div class="jarvis-name">JARVIS — NexoraFlow</div>
+            <div class="jarvis-name">NEXO — NexoraFlow</div>
             <div class="jarvis-status" id="jarvis-status">Online · Pronto para ajudar</div>
           </div>
         </div>
@@ -852,7 +852,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     </div>
     <div class="mob-item" onclick="showPage('chat',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10a9.96 9.96 0 0 1-4.9-1.28L2 22l1.28-5.1A9.96 9.96 0 0 1 2 12 10 10 0 0 1 12 2z"/><circle cx="8" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="16" cy="12" r="1" fill="currentColor"/></svg>
-      <span>JARVIS</span>
+      <span>NEXO</span>
     </div>
     <div class="mob-item" onclick="toggleMobMenu()">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="3" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="13" r="1.2" fill="currentColor"/></svg>
@@ -3375,7 +3375,7 @@ async function sendChat() {
     const data = await res.json();
     jarvisHistory = jarvisHistory.filter(m => m.role !== 'typing');
     if (!res.ok) {
-      jarvisHistory.push({ role: 'assistant', content: `⚠️ ${data.error || 'Erro ao conectar com o JARVIS.'}`, time: now });
+      jarvisHistory.push({ role: 'assistant', content: `⚠️ ${data.error || 'Erro ao conectar com o NEXO.'}`, time: now });
     } else {
       jarvisHistory.push({ role: 'assistant', content: data.reply, time: now });
       // Atualiza dados locais se JARVIS registrou algo
@@ -3446,7 +3446,7 @@ function toggleVoice() {
 
 const JARVIS_WELCOME = {
   role: 'assistant',
-  content: '👋 Olá! Sou o JARVIS, seu assistente pessoal no NexoraFlow.\n\nPosso ajudar você a:\n• 💸 Registrar gastos — <i>"gastei 45 reais no almoço"</i>\n• ✅ Marcar hábitos — <i>"completei minha academia hoje"</i>\n• 📋 Criar tarefas — <i>"criar tarefa estudar amanhã às 19h"</i>\n• 📊 Consultar dados — <i>"quanto gastei esse mês?"</i>\n\nPode falar ou digitar! 🎙️',
+  content: '👋 Olá! Sou o NEXO, seu assistente pessoal no NexoraFlow.\n\nPosso ajudar você a:\n• 💸 Registrar gastos — <i>"gastei 45 reais no almoço"</i>\n• ✅ Marcar hábitos — <i>"completei minha academia hoje"</i>\n• 📋 Criar tarefas — <i>"criar tarefa estudar amanhã às 19h"</i>\n• 📊 Consultar dados — <i>"quanto gastei esse mês?"</i>\n\nPode falar ou digitar! 🎙️',
 };
 
 function jarvisStorageKey() {

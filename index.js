@@ -1122,60 +1122,8 @@ app.get('/health', (req, res) => {
 });
 
 // ============================================
-// API — JARVIS (Chat IA com ferramentas reais — usa Gemini gratuito)
+// API — NEXO (Chat IA com ferramentas reais — usa Gemini gratuito)
 // ============================================
-const JARVIS_TOOLS = [
-  {
-    name: 'registrar_gasto',
-    description: 'Registra um gasto/despesa do usuário. Use quando o usuário mencionar que gastou dinheiro em algo.',
-    parameters: {
-      type: 'object',
-      properties: {
-        amount: { type: 'number', description: 'Valor em reais (apenas número)' },
-        category: { type: 'string', description: 'Categoria: Alimentação, Transporte, Saúde, Lazer, Moradia, Educação, Roupas, Outros' },
-        description: { type: 'string', description: 'Descrição breve do gasto' },
-        date: { type: 'string', description: 'Data no formato YYYY-MM-DD. Se o usuário disser "ontem" calcule a data correta. Padrão: hoje.' },
-      },
-      required: ['amount', 'category', 'description'],
-    },
-  },
-  {
-    name: 'marcar_habito',
-    description: 'Marca um hábito como concluído hoje. Use quando o usuário disser que fez ou completou um hábito.',
-    parameters: {
-      type: 'object',
-      properties: {
-        habit_name: { type: 'string', description: 'Nome do hábito (ou parte do nome para busca)' },
-      },
-      required: ['habit_name'],
-    },
-  },
-  {
-    name: 'criar_tarefa',
-    description: 'Cria uma nova tarefa/agenda para o usuário.',
-    parameters: {
-      type: 'object',
-      properties: {
-        text: { type: 'string', description: 'Descrição da tarefa' },
-        tag: { type: 'string', description: 'Tag: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros' },
-        due_date: { type: 'string', description: 'Data no formato YYYY-MM-DD (opcional)' },
-        due_time: { type: 'string', description: 'Horário no formato HH:MM (opcional)' },
-      },
-      required: ['text'],
-    },
-  },
-  {
-    name: 'consultar_dados',
-    description: 'Consulta dados do usuário como gastos, hábitos, tarefas, XP ou perfil.',
-    parameters: {
-      type: 'object',
-      properties: {
-        tipo: { type: 'string', enum: ['gastos', 'habitos', 'tarefas', 'perfil'], description: 'Tipo de dado a consultar' },
-      },
-      required: ['tipo'],
-    },
-  },
-];
 
 async function executarFerramenta(tool_name, tool_input, userId, clientNow, tzOffset) {
   console.log('[JARVIS TOOL]', tool_name, JSON.stringify(tool_input), 'userId:', userId);
@@ -1339,14 +1287,14 @@ app.post('/api/chat', express.json(), async (req, res) => {
 
     // Inclui as últimas mensagens para contexto de confirmações ("Sim", "pode criar", etc.)
     const recentHistory = messages.slice(-6, -1)
-      .map(m => `${m.role === 'user' ? 'Usuário' : 'JARVIS'}: ${m.content}`)
+      .map(m => `${m.role === 'user' ? 'Usuário' : 'NEXO'}: ${m.content}`)
       .join('\n');
 
     // Usa Gemini para parsear intenção como JSON (sem function calling)
-    const parsePrompt = `Você é o JARVIS do NexoraFlow. Hoje é ${today} (${todayISO}). Ontem foi ${yesterday}.
+    const parsePrompt = `Você é o NEXO do NexoraFlow. Hoje é ${today} (${todayISO}). Ontem foi ${yesterday}.
 
 Analise a mensagem do usuário considerando o contexto da conversa recente.
-Se o usuário confirmar algo que o JARVIS perguntou (ex: "sim", "pode", "vai", "cria"), execute a ação que foi proposta.
+Se o usuário confirmar algo que o NEXO perguntou (ex: "sim", "pode", "vai", "cria"), execute a ação que foi proposta.
 Retorne APENAS um array JSON válido (sem markdown, sem explicação).
 Se houver múltiplos gastos/tarefas/hábitos, retorne um item para cada um.
 
@@ -1366,8 +1314,8 @@ Se houver múltiplos gastos/tarefas/hábitos, retorne um item para cada um.
 
 Exemplos:
 - "gastei 30 em comida e 20 no uber" → dois itens registrar_gasto
-- "sim" (após JARVIS perguntar se cria hábito "academia") → criar_habito com habit_name "academia"
-- "pode criar" (após JARVIS perguntar algo) → executa a ação que foi proposta
+- "sim" (após NEXO perguntar se cria hábito "academia") → criar_habito com habit_name "academia"
+- "pode criar" (após NEXO perguntar algo) → executa a ação que foi proposta
 
 Categorias de gasto: Alimentação, Transporte, Saúde, Lazer, Moradia, Educação, Roupas, Outros
 Tags de tarefa: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros
@@ -1394,7 +1342,7 @@ ${recentHistory ? `Conversa recente:\n${recentHistory}\n` : ''}Mensagem do usuá
     const toolResult = toolResults.join('\n');
 
     // Segunda chamada: gera resposta final natural
-    const replyPrompt = `Você é o JARVIS do NexoraFlow. Hoje é ${today}.
+    const replyPrompt = `Você é o NEXO do NexoraFlow. Hoje é ${today}.
 Responda de forma concisa e amigável em português brasileiro, usando emojis moderadamente.
 
 Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"
