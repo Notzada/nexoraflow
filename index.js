@@ -1177,14 +1177,29 @@ const JARVIS_TOOLS = [
   },
 ];
 
-async function executarFerramenta(tool_name, tool_input, userId) {
+async function executarFerramenta(tool_name, tool_input, userId, clientNow, tzOffset) {
   console.log('[JARVIS TOOL]', tool_name, JSON.stringify(tool_input), 'userId:', userId);
   try {
     if (tool_name === 'registrar_gasto') {
       const { category, description } = tool_input;
       const amount = parseFloat(tool_input.amount);
-      // Usa meio-dia para evitar erro de fuso (meia-noite UTC = dia anterior no Brasil)
-      const created_at = tool_input.date ? new Date(tool_input.date + 'T12:00:00Z').toISOString() : new Date().toISOString();
+      // Se tem data específica: usa essa data mas mantém horário local do cliente
+      // tzOffset em minutos (ex: -180 = UTC-3 Brasil). clientNow é ISO UTC atual do cliente.
+      let created_at;
+      if (tool_input.date && clientNow && tzOffset !== undefined) {
+        // Extrai HH:MM:SS do horário local do cliente
+        const localNow = new Date(new Date(clientNow).getTime() - tzOffset * 60000);
+        const timeStr = localNow.toISOString().split('T')[1]; // ex: "22:08:33.000Z"
+        // Combina data especificada + horário local do cliente, convertendo de volta pra UTC
+        const combined = new Date(tool_input.date + 'T' + timeStr.replace('Z', '') + 'Z');
+        combined.setTime(combined.getTime() + tzOffset * 60000); // converte local→UTC
+        created_at = combined.toISOString();
+      } else if (tool_input.date) {
+        // Sem info de fuso: usa meio-dia UTC (evita virar dia no Brasil)
+        created_at = new Date(tool_input.date + 'T15:00:00Z').toISOString();
+      } else {
+        created_at = clientNow || new Date().toISOString();
+      }
       const { data: inserted, error } = await supabaseAdmin.from('expenses').insert({
         user_id: userId, amount, category, description,
         source: 'jarvis', installments: 1, installment_current: 1, created_at,
@@ -1260,7 +1275,7 @@ app.post('/api/chat', express.json(), async (req, res) => {
   const { data: { user } } = await supabaseAdmin.auth.getUser(token);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { messages, clientDate } = req.body;
+  const { messages, clientDate, clientNow, tzOffset } = req.body;
   if (!messages?.length) return res.status(400).json({ error: 'Mensagens vazias' });
 
   try {
@@ -1345,7 +1360,7 @@ Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"`;
     const toolResults = [];
     for (const item of actions) {
       if (item.action && item.action !== 'conversa') {
-        const r = await executarFerramenta(item.action, item.params, user.id);
+        const r = await executarFerramenta(item.action, item.params, user.id, clientNow, tzOffset);
         if (r) toolResults.push(r);
       }
     }
