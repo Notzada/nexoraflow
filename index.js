@@ -1262,7 +1262,7 @@ app.post('/api/chat', express.json(), async (req, res) => {
     async function jarvisGenerate(prompt) {
       let lastErr;
       for (const modelName of JARVIS_MODELS) {
-        for (let attempt = 0; attempt < 2; attempt++) {
+        for (let attempt = 0; attempt < 3; attempt++) {
           try {
             const m = jarvisGenAI.getGenerativeModel({ model: modelName });
             const result = await m.generateContent(prompt);
@@ -1271,12 +1271,13 @@ app.post('/api/chat', express.json(), async (req, res) => {
             lastErr = e;
             const is503 = e.message && e.message.includes('503');
             const is429 = e.message && e.message.includes('429');
-            if (is503 && attempt === 0) {
-              await new Promise(r => setTimeout(r, 1500));
+            if ((is429 || is503) && attempt < 2) {
+              // Aguarda antes de tentar de novo: 429 (RPM) costuma resetar em segundos
+              await new Promise(r => setTimeout(r, is429 ? 5000 : 1500));
               continue;
             }
-            if (is429 || is503) break; // try next model
-            throw e; // other errors bubble up
+            if (is429 || is503) break; // esgotou tentativas → próximo modelo
+            throw e; // outros erros sobem direto
           }
         }
       }
