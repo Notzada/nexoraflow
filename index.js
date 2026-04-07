@@ -1190,7 +1190,8 @@ async function executarFerramenta(tool_name, tool_input, userId) {
       }).select().single();
       console.log('[JARVIS INSERT]', inserted?.id, error?.message);
       if (error) return `Erro ao registrar gasto: ${error.message}`;
-      return `Gasto de R$${amount.toFixed(2)} em ${category} (${description}) registrado com sucesso!`;
+      const dateLabel = tool_input.date ? ` referente a ${tool_input.date}` : '';
+      return `Gasto de R$${amount.toFixed(2)} em ${category} (${description})${dateLabel} registrado com sucesso!`;
     }
 
     if (tool_name === 'marcar_habito') {
@@ -1269,6 +1270,8 @@ app.post('/api/chat', express.json(), async (req, res) => {
       systemInstruction: `Você é o JARVIS, assistente pessoal inteligente do NexoraFlow. Hoje é ${today}.
 Você ajuda o usuário a registrar gastos, marcar hábitos, criar tarefas e consultar seus dados.
 Seja conciso, amigável e use emojis moderadamente. Sempre confirme o que foi feito.
+Quando o usuário disser "ontem", calcule corretamente a data anterior a hoje e passe no campo date.
+Na resposta final, confirme a data correta que foi usada.
 Responda sempre em português brasileiro.`,
       tools: [{ functionDeclarations: JARVIS_TOOLS }],
     });
