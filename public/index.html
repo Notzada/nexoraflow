@@ -283,6 +283,23 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 .toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:12px 18px;font-size:12px;font-family:var(--font-display);font-weight:600;color:var(--accent);z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;}
 .toast.show{transform:translateY(0);opacity:1;}
 
+/* ======= CATEGORIAS ======= */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:12px;}
+.cat-chip{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;position:relative;}
+.cat-chip-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.cat-chip-label{flex:1;font-size:11px;font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cat-chip-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 4px;flex-shrink:0;}
+.cat-chip-del:hover{color:var(--red);}
+.cat-chip.builtin .cat-chip-del{visibility:hidden;pointer-events:none;}
+.add-cat-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:transparent;border:1px dashed var(--border2);border-radius:10px;padding:9px 12px;cursor:pointer;color:var(--muted);font-size:11px;font-family:var(--font-display);font-weight:600;transition:all .15s;width:100%;}
+.add-cat-btn:hover{border-color:var(--accent);color:var(--accent);}
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:8px;}
+.emoji-opt{background:var(--bg);border:1px solid transparent;border-radius:8px;padding:6px;font-size:18px;cursor:pointer;text-align:center;transition:all .1s;}
+.emoji-opt:hover,.emoji-opt.sel{border-color:var(--accent);background:rgba(168,85,247,.12);}
+.color-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.color-opt{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .1s;}
+.color-opt:hover,.color-opt.sel{border-color:#fff;transform:scale(1.15);}
+
 /* ======= CONFIGURAÇÕES (Settings Page) ======= */
 .settings-form{max-width:520px;}
 .settings-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;margin-top:16px;}
@@ -828,6 +845,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 
     <div class="page" id="page-settings">
       <div class="page-header"><div><div class="page-title">Configurações</div><div class="page-subtitle">Perfil e preferências</div></div></div>
+
+      <!-- Categorias de Gastos -->
+      <div class="chart-card" style="margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:4px">Categorias de Gastos</div>
+        <div class="card-sub">Personalize as categorias que aparecem ao registrar um gasto.</div>
+        <div id="cat-manager-grid" class="cat-grid"></div>
+        <button class="add-cat-btn" style="margin-top:10px;" onclick="openAddCatModal()">＋ Nova categoria</button>
+      </div>
+
       <div class="chart-card">
         <div class="card-title" style="margin-bottom:4px">Meu Perfil</div>
         <div class="card-sub">Edite o nome e avatar que aparecem no ranking.</div>
@@ -1229,6 +1255,61 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 
     <div class="modal-actions" style="margin-top:16px;">
       <button class="modal-cancel" onclick="closeModal('modal-friends')" style="width:100%;">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nova Categoria -->
+<div class="modal-overlay" id="modal-add-cat" style="display:none" onclick="if(event.target===this)closeModal('modal-add-cat')">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-title">// Nova Categoria</div>
+    <div class="modal-label">Nome</div>
+    <input class="modal-input" id="new-cat-name" placeholder="ex: Pets, Academia, Viagem...">
+    <div class="modal-label">Emoji</div>
+    <div class="emoji-grid" id="emoji-picker">
+      <span class="emoji-opt sel" data-emoji="🏷️">🏷️</span>
+      <span class="emoji-opt" data-emoji="🐾">🐾</span>
+      <span class="emoji-opt" data-emoji="🏋️">🏋️</span>
+      <span class="emoji-opt" data-emoji="✈️">✈️</span>
+      <span class="emoji-opt" data-emoji="🎮">🎮</span>
+      <span class="emoji-opt" data-emoji="💅">💅</span>
+      <span class="emoji-opt" data-emoji="🍺">🍺</span>
+      <span class="emoji-opt" data-emoji="☕">☕</span>
+      <span class="emoji-opt" data-emoji="🎁">🎁</span>
+      <span class="emoji-opt" data-emoji="🏥">🏥</span>
+      <span class="emoji-opt" data-emoji="💇">💇</span>
+      <span class="emoji-opt" data-emoji="🛒">🛒</span>
+      <span class="emoji-opt" data-emoji="📱">📱</span>
+      <span class="emoji-opt" data-emoji="🔧">🔧</span>
+      <span class="emoji-opt" data-emoji="🚀">🚀</span>
+      <span class="emoji-opt" data-emoji="💡">💡</span>
+      <span class="emoji-opt" data-emoji="🎵">🎵</span>
+      <span class="emoji-opt" data-emoji="🌿">🌿</span>
+      <span class="emoji-opt" data-emoji="🍕">🍕</span>
+      <span class="emoji-opt" data-emoji="🏠">🏠</span>
+      <span class="emoji-opt" data-emoji="🎓">🎓</span>
+      <span class="emoji-opt" data-emoji="💻">💻</span>
+      <span class="emoji-opt" data-emoji="⚽">⚽</span>
+      <span class="emoji-opt" data-emoji="🐶">🐶</span>
+    </div>
+    <div class="modal-label">Cor</div>
+    <div class="color-grid" id="color-picker">
+      <div class="color-opt sel" data-color="#a855f7" style="background:#a855f7"></div>
+      <div class="color-opt" data-color="#f5a623" style="background:#f5a623"></div>
+      <div class="color-opt" data-color="#4a90d9" style="background:#4a90d9"></div>
+      <div class="color-opt" data-color="#e05c5c" style="background:#e05c5c"></div>
+      <div class="color-opt" data-color="#22c55e" style="background:#22c55e"></div>
+      <div class="color-opt" data-color="#ec407a" style="background:#ec407a"></div>
+      <div class="color-opt" data-color="#4fc3f7" style="background:#4fc3f7"></div>
+      <div class="color-opt" data-color="#ff9800" style="background:#ff9800"></div>
+      <div class="color-opt" data-color="#9c27b0" style="background:#9c27b0"></div>
+      <div class="color-opt" data-color="#00bcd4" style="background:#00bcd4"></div>
+      <div class="color-opt" data-color="#8bc34a" style="background:#8bc34a"></div>
+      <div class="color-opt" data-color="#78909c" style="background:#78909c"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal('modal-add-cat')">Cancelar</button>
+      <button class="modal-confirm" onclick="confirmAddCat()">Criar →</button>
     </div>
   </div>
 </div>
@@ -1712,6 +1793,109 @@ async function getGoals() {
 }
 
 // ============================================
+// CATEGORIAS DE GASTOS
+// ============================================
+const DEFAULT_CATS = [
+  { name:'Alimentação', emoji:'🍽️', color:'#f5a623', builtin:true },
+  { name:'Transporte',  emoji:'🚗',  color:'#4a90d9', builtin:true },
+  { name:'Lazer',       emoji:'🎬',  color:'#9b72f5', builtin:true },
+  { name:'Saúde',       emoji:'💊',  color:'#e05c5c', builtin:true },
+  { name:'Casa',        emoji:'🏠',  color:'#6b6f78', builtin:true },
+  { name:'Educação',    emoji:'📚',  color:'#a855f7', builtin:true },
+  { name:'Roupas',      emoji:'👗',  color:'#ec407a', builtin:true },
+  { name:'Outros',      emoji:'💼',  color:'#78909c', builtin:true },
+];
+
+function getCats() {
+  const custom = JSON.parse(localStorage.getItem('nexora_cats') || '[]');
+  return [...DEFAULT_CATS, ...custom];
+}
+
+function getCatColor(name) {
+  return getCats().find(c=>c.name===name)?.color || '#78909c';
+}
+
+function getCatEmoji(name) {
+  if (name === 'Renda') return '💰';
+  return getCats().find(c=>c.name===name)?.emoji || '🏷️';
+}
+
+function populateCatSelects() {
+  const cats = getCats();
+  const selects = ['exp-cat-input', 'edit-cat-select'];
+  selects.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = cats.map(c => `<option value="${c.name}">${c.emoji} ${c.name}</option>`).join('');
+    if (current && cats.find(c=>c.name===current)) sel.value = current;
+  });
+}
+
+function renderCatManager() {
+  const grid = document.getElementById('cat-manager-grid');
+  if (!grid) return;
+  const cats = getCats();
+  grid.innerHTML = cats.map(c => `
+    <div class="cat-chip${c.builtin?' builtin':''}">
+      <div class="cat-chip-dot" style="background:${c.color}"></div>
+      <span style="font-size:15px;">${c.emoji}</span>
+      <span class="cat-chip-label">${c.name}</span>
+      <button class="cat-chip-del" onclick="deleteCustomCat('${c.name}')" title="Remover">×</button>
+    </div>`).join('');
+}
+
+function deleteCustomCat(name) {
+  if (!confirm(`Remover a categoria "${name}"?`)) return;
+  const custom = JSON.parse(localStorage.getItem('nexora_cats') || '[]');
+  const updated = custom.filter(c => c.name !== name);
+  localStorage.setItem('nexora_cats', JSON.stringify(updated));
+  renderCatManager();
+  populateCatSelects();
+  showToast('🗑️ Categoria removida.');
+}
+
+function openAddCatModal() {
+  document.getElementById('new-cat-name').value = '';
+  document.querySelectorAll('#emoji-picker .emoji-opt').forEach((el,i)=>el.classList.toggle('sel',i===0));
+  document.querySelectorAll('#color-picker .color-opt').forEach((el,i)=>el.classList.toggle('sel',i===0));
+  document.getElementById('modal-add-cat').style.display='flex';
+  setTimeout(()=>document.getElementById('new-cat-name').focus(),100);
+}
+
+function confirmAddCat() {
+  const name = document.getElementById('new-cat-name').value.trim();
+  if (!name) { showToast('⚠️ Digite um nome para a categoria.'); return; }
+  const cats = getCats();
+  if (cats.find(c=>c.name.toLowerCase()===name.toLowerCase())) {
+    showToast('⚠️ Já existe uma categoria com esse nome.'); return;
+  }
+  const emoji = document.querySelector('#emoji-picker .emoji-opt.sel')?.dataset.emoji || '🏷️';
+  const color = document.querySelector('#color-picker .color-opt.sel')?.dataset.color || '#a855f7';
+  const custom = JSON.parse(localStorage.getItem('nexora_cats') || '[]');
+  custom.push({ name, emoji, color });
+  localStorage.setItem('nexora_cats', JSON.stringify(custom));
+  closeModal('modal-add-cat');
+  renderCatManager();
+  populateCatSelects();
+  showToast(`✅ Categoria "${name}" criada!`);
+}
+
+// Emoji & color picker selection
+document.addEventListener('click', e => {
+  const eo = e.target.closest('.emoji-opt');
+  if (eo && eo.closest('#emoji-picker')) {
+    document.querySelectorAll('#emoji-picker .emoji-opt').forEach(x=>x.classList.remove('sel'));
+    eo.classList.add('sel');
+  }
+  const co = e.target.closest('.color-opt');
+  if (co && co.closest('#color-picker')) {
+    document.querySelectorAll('#color-picker .color-opt').forEach(x=>x.classList.remove('sel'));
+    co.classList.add('sel');
+  }
+});
+
+// ============================================
 // RENDER
 // ============================================
 const catColors = {
@@ -1721,8 +1905,8 @@ const catColors = {
 
 function expenseHTML(e, showDel=false) {
   const isIncome = e.category === 'Renda';
-  const color = isIncome ? '#22c55e' : (catColors[e.category] || '#6b6f78');
-  const icon  = isIncome ? '💰' : ({Alimentação:'🍽️',Transporte:'🚗',Lazer:'🎬',Saúde:'💊',Casa:'🏠',Educação:'📚',Roupas:'👗',Outros:'💼'}[e.category]||'💰');
+  const color = isIncome ? '#22c55e' : getCatColor(e.category);
+  const icon  = getCatEmoji(e.category);
   const date  = new Date(e.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
   const descEsc = e.description.replace(/'/g,"\\'");
   const isFixed = e.source === 'fixed';
@@ -1788,7 +1972,7 @@ async function loadDashboard() {
   const byCat = expenses.filter(e=>e.category!=='Renda').reduce((acc,e)=>{ acc[e.category]=(acc[e.category]||0)+parseFloat(e.amount); return acc; },{});
   const catKeys = Object.keys(byCat);
   const catVals = catKeys.map(k=>byCat[k]);
-  const catCols = catKeys.map(k=>catColors[k]||'#78909c');
+  const catCols = catKeys.map(k=>getCatColor(k));
 
   if(pieChart) pieChart.destroy();
   if(catKeys.length > 0) {
@@ -2039,7 +2223,7 @@ async function loadGoals() {
     : '<div class="empty">Nenhuma meta ainda. Clique em "+ Nova Meta"!</div>';
 }
 
-function loadAll() { loadDashboard(); loadCustomTags(); }
+function loadAll() { loadDashboard(); loadCustomTags(); populateCatSelects(); }
 function loadPage(id) {
   if(id==='habits')   loadHabits();
   if(id==='tasks')    loadTasks();
@@ -2050,7 +2234,7 @@ function loadPage(id) {
   }
   if(id==='goals')    loadGoals();
   if(id==='dashboard') loadDashboard();
-  if(id==='settings') loadSettings();
+  if(id==='settings') { loadSettings(); renderCatManager(); }
   if(id==='ranking')  loadRanking();
   if(id==='verify')   loadVerifications();
   if(id==='events')   loadEvents();
@@ -2261,7 +2445,7 @@ function addExpensePrompt() {
   document.getElementById('exp-amt-input').value='';
   document.getElementById('exp-inst-input').value='1';
   document.getElementById('exp-inst-input').disabled=false;
-  document.getElementById('exp-cat-input').value='Alimentação';
+  document.getElementById('exp-cat-input').value = getCats()[0]?.name || 'Alimentação';
   document.getElementById('exp-date-input').value='';
   document.getElementById('inst-preview').textContent='';
   document.getElementById('exp-fixed-input').value='0';
@@ -2706,8 +2890,7 @@ function renderDayEvents(ds, events) {
     }
     if (ev.type === 'expense') {
       const isInc = ev.category === 'Renda';
-      const catColors2={'Alimentação':'#f5a623','Transporte':'#4a90d9','Lazer':'#9b72f5','Saúde':'#e05c5c','Casa':'#6b6f78','Educação':'#a855f7','Roupas':'#ec407a','Outros':'#78909c','Renda':'#22c55e'};
-      const c = catColors2[ev.category]||'#78909c';
+      const c = isInc ? '#22c55e' : getCatColor(ev.category);
       const sign = isInc ? `<div style="font-family:var(--font-display);font-size:12px;color:#22c55e;font-weight:700">+R$${parseFloat(ev.amount).toFixed(2)}</div>`
                          : `<div style="font-family:var(--font-display);font-size:12px;color:var(--red);font-weight:700">-R$${parseFloat(ev.amount).toFixed(2)}</div>`;
       const icon = isInc ? '💰' : '💸';
