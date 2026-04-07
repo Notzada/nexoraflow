@@ -1169,7 +1169,7 @@ async function executarFerramenta(tool_name, tool_input, userId, clientNow, tzOf
       const { data: habits } = await supabaseAdmin.from('habits')
         .select('id, name').eq('user_id', userId);
       const match = habits?.find(h => h.name.toLowerCase().includes(habit_name.toLowerCase()));
-      if (!match) return `Hábito "${habit_name}" não encontrado. Seus hábitos: ${habits?.map(h=>h.name).join(', ') || 'nenhum'}`;
+      if (!match) return `ERRO: Hábito "${habit_name}" não encontrado. Hábitos cadastrados: ${habits?.map(h=>h.name).join(', ') || 'nenhum'}. Sugira criar o hábito.`;
       const today = new Date().toISOString().split('T')[0];
       const { data: existing } = await supabaseAdmin.from('habit_logs')
         .select('id').eq('habit_id', match.id).eq('done_at', today).single();
@@ -1348,15 +1348,28 @@ ${recentHistory ? `Conversa recente:\n${recentHistory}\n\n` : ''}Mensagem do usu
     }
 
     const toolResults = [];
+    const toolErrors = [];
     for (const item of actions) {
       if (item.action && item.action !== 'conversa') {
         const r = await executarFerramenta(item.action, item.params, user.id, clientNow, tzOffset);
-        if (r) toolResults.push(r);
+        if (r) {
+          const isError = r.startsWith('Erro') || r.startsWith('ERRO');
+          if (isError) toolErrors.push(r);
+          else toolResults.push(r);
+        }
       }
     }
 
-    // Se executou ações mas a resposta não menciona resultado, gera uma confirmação simples
-    if (toolResults.length > 0 && reply.length < 10) {
+    // Se houve erros nas ferramentas, substitui a resposta pelo resultado real
+    if (toolErrors.length > 0) {
+      // Gera uma resposta contextualizada com base no erro real
+      const errorContext = toolErrors.join('\n');
+      const fixPrompt = `Você é o NEXO do NexoraFlow. Responda de forma concisa e amigável em português.
+O usuário disse: "${lastMsg.replace(/"/g, "'")}"
+Resultado real da execução: ${errorContext}
+Informe o que aconteceu e sugira o que o usuário pode fazer (ex: criar o hábito se não existir). Use emojis moderadamente.`;
+      reply = (await jarvisGenerate(fixPrompt)).trim();
+    } else if (toolResults.length > 0 && reply.length < 10) {
       reply = toolResults.map(r => `✅ ${r}`).join('\n');
     }
 
