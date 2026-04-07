@@ -3339,6 +3339,7 @@ async function sendChat() {
   }
 
   setJarvisStatus('Online · Pronto para ajudar', false);
+  saveJarvisHistory();
   renderChat();
 }
 
@@ -3393,12 +3394,36 @@ function toggleVoice() {
   }
 }
 
+const JARVIS_WELCOME = {
+  role: 'assistant',
+  content: '👋 Olá! Sou o JARVIS, seu assistente pessoal no NexoraFlow.\n\nPosso ajudar você a:\n• 💸 Registrar gastos — <i>"gastei 45 reais no almoço"</i>\n• ✅ Marcar hábitos — <i>"completei minha academia hoje"</i>\n• 📋 Criar tarefas — <i>"criar tarefa estudar amanhã às 19h"</i>\n• 📊 Consultar dados — <i>"quanto gastei esse mês?"</i>\n\nPode falar ou digitar! 🎙️',
+};
+
+function jarvisStorageKey() {
+  return `jarvis_history_${currentUser?.id || 'guest'}`;
+}
+
+function saveJarvisHistory() {
+  // Salva apenas as últimas 50 mensagens para não encher o storage
+  const toSave = jarvisHistory.filter(m => m.role !== 'typing').slice(-50);
+  try { localStorage.setItem(jarvisStorageKey(), JSON.stringify(toSave)); } catch(_) {}
+}
+
+function loadJarvisHistory() {
+  try {
+    const saved = localStorage.getItem(jarvisStorageKey());
+    if (saved) return JSON.parse(saved);
+  } catch(_) {}
+  return null;
+}
+
 function initJarvis() {
-  jarvisHistory = [{
-    role: 'assistant',
-    content: '👋 Olá! Sou o JARVIS, seu assistente pessoal no NexoraFlow.\n\nPosso ajudar você a:\n• 💸 Registrar gastos — <i>"gastei 45 reais no almoço"</i>\n• ✅ Marcar hábitos — <i>"completei minha academia hoje"</i>\n• 📋 Criar tarefas — <i>"criar tarefa estudar amanhã às 19h"</i>\n• 📊 Consultar dados — <i>"quanto gastei esse mês?"</i>\n\nPode falar ou digitar! 🎙️',
-    time: new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}),
-  }];
+  const saved = loadJarvisHistory();
+  if (saved && saved.length > 0) {
+    jarvisHistory = saved;
+  } else {
+    jarvisHistory = [{ ...JARVIS_WELCOME, time: new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) }];
+  }
   renderChat();
 }
 
