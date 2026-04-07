@@ -691,7 +691,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
       <div class="page-header"><div><div class="page-title">Ranking</div><div class="page-subtitle">Competição entre os jogadores</div></div></div>
       <div class="chart-card" style="margin-bottom:16px">
         <div class="card-title" style="margin-bottom:4px">Tabela de XP</div>
-        <div class="card-sub">Classifica todos os usuários pela XP acumulada</div>
+        <div class="card-sub">Você e seus amigos ordenados por XP</div>
         <div id="ranking-list"><div class="loading"><div class="spin"></div>Carregando...</div></div>
       </div>
       <div class="chart-card">
@@ -3009,10 +3009,20 @@ async function submitEventProof() {
 async function loadRanking() {
   const el = document.getElementById('ranking-list');
   el.innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
+
+  // Busca lista de amigos do usuário atual
+  const { data: friendRows } = await supabaseClient
+    .from('friends').select('friend_id').eq('user_id', currentUser.id);
+  const friendIds = (friendRows || []).map(r => r.friend_id);
+  const allowedIds = [currentUser.id, ...friendIds];
+
   const { data: profiles } = await supabaseClient
-    .from('user_profiles').select('*').order('xp', { ascending: false });
+    .from('user_profiles').select('*')
+    .in('id', allowedIds)
+    .order('xp', { ascending: false });
+
   if (!profiles || !profiles.length) {
-    el.innerHTML = '<div class="empty">Nenhum jogador ainda.</div>';
+    el.innerHTML = '<div class="empty" style="text-align:center;padding:32px 16px;color:var(--muted)">Nenhum amigo no ranking ainda.<br><span style="font-size:11px">Adicione amigos no seu perfil para competir!</span></div>';
     return;
   }
   el.innerHTML = profiles.map((p, i) => {
