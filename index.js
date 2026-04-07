@@ -1180,15 +1180,13 @@ async function executarFerramenta(tool_name, tool_input, userId, clientNow, tzOf
     }
 
     if (tool_name === 'criar_habito') {
-      const { habit_name, icon, color } = tool_input;
+      const { habit_name, icon } = tool_input;
       const { error } = await supabaseAdmin.from('habits').insert({
         user_id: userId,
         name: habit_name,
-        icon: icon || '⭐',
-        color: color || '#9b72f5',
-        frequency: 'daily',
+        emoji: icon || '⭐',
       });
-      if (error) return `Erro ao criar hábito: ${error.message}`;
+      if (error) return `ERRO ao criar hábito: ${error.message}`;
       return `Hábito "${habit_name}" criado com sucesso! Agora você já pode marcá-lo.`;
     }
 
@@ -1322,7 +1320,7 @@ PARTE 1 — Retorne um array JSON com as ações a executar (sem markdown):
 Schemas de params:
 - registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD" (use ${todayISO} se não mencionou data; só use outra data se o usuário disse explicitamente "ontem", "dia X", etc.), "time": "HH:MM" (opcional) }
 - marcar_habito:   { "habit_name": string }
-- criar_habito:    { "habit_name": string, "icon": emoji, "color": "#hex" }
+- criar_habito:    { "habit_name": string, "icon": emoji }
 - criar_tarefa:    { "text": string, "tag": string, "due_date": "YYYY-MM-DD", "due_time": "HH:MM" }
 - consultar:       { "tipo": "gastos"|"habitos"|"tarefas"|"perfil" }
 - conversa:        {}
