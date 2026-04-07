@@ -1703,9 +1703,10 @@ async function loadDashboard() {
   allExpensesCache = expenses;
   renderBarChart(expenses);
 
-  // Últimos gastos
-  document.getElementById('dash-expenses').innerHTML = expenses.length
-    ? expenses.slice(0,5).map(e=>expenseHTML(e)).join('')
+  // Últimos gastos (exclui receitas)
+  const onlyExp = expenses.filter(e=>e.category!=='Renda');
+  document.getElementById('dash-expenses').innerHTML = onlyExp.length
+    ? onlyExp.slice(0,5).map(e=>expenseHTML(e)).join('')
     : '<div class="empty">Nenhum gasto ainda.<br>Mande uma msg no Telegram! 📱</div>';
 
   // Hábitos hoje
@@ -1743,12 +1744,10 @@ async function renderBarChart(expenses) {
     labels = days.map(d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}));
     totals = days.map(d=>{
       const ds = d.toISOString().split('T')[0];
-      return exp7.filter(e=>e.created_at.startsWith(ds)).reduce((s,e)=>s+parseFloat(e.amount),0);
+      return exp7.filter(e=>e.created_at.startsWith(ds) && e.category!=='Renda').reduce((s,e)=>s+parseFloat(e.amount),0);
     });
   } else if(barPeriod === '30d') {
-    // Last 30 days — one bar per day (grouped by week label every 5 days)
     const days = Array.from({length:30},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()-29+i); return d; });
-    // Fetch all expenses for last 30 days
     const from = new Date(); from.setDate(from.getDate()-29); from.setHours(0,0,0,0);
     let exp30 = expenses;
     if(supabaseClient && currentUser) {
@@ -1758,10 +1757,9 @@ async function renderBarChart(expenses) {
     labels = days.map((d,i)=> i%5===0 ? d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '');
     totals = days.map(d=>{
       const ds = d.toISOString().split('T')[0];
-      return exp30.filter(e=>e.created_at.startsWith(ds)).reduce((s,e)=>s+parseFloat(e.amount),0);
+      return exp30.filter(e=>e.created_at.startsWith(ds) && e.category!=='Renda').reduce((s,e)=>s+parseFloat(e.amount),0);
     });
   } else if(barPeriod === '12m') {
-    // Last 12 months — one bar per month
     const months = Array.from({length:12},(_,i)=>{ const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-11+i); return d; });
     const from = new Date(); from.setMonth(from.getMonth()-11); from.setDate(1); from.setHours(0,0,0,0);
     let exp12 = expenses;
@@ -1771,8 +1769,8 @@ async function renderBarChart(expenses) {
     }
     labels = months.map(d=>d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}));
     totals = months.map(d=>{
-      const ym = d.toISOString().slice(0,7); // "YYYY-MM"
-      return exp12.filter(e=>e.created_at.startsWith(ym)).reduce((s,e)=>s+parseFloat(e.amount),0);
+      const ym = d.toISOString().slice(0,7);
+      return exp12.filter(e=>e.created_at.startsWith(ym) && e.category!=='Renda').reduce((s,e)=>s+parseFloat(e.amount),0);
     });
   }
 
