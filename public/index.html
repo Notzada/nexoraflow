@@ -2797,10 +2797,11 @@ async function renderFriendsList() {
       const p = profileMap[fid] || {};
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
         ${avatarHTML(p.avatar_emoji)}
-        <div style="flex:1;">
+        <div style="flex:1;cursor:pointer;" onclick="closeModal('modal-friends');openUserProfile('${fid}')">
           <div style="font-family:var(--font-display);font-size:11px;font-weight:700;">${p.username || '—'}</div>
           <div style="font-size:10px;color:var(--muted);">Nível ${p.level || 1} · ${p.xp || 0} XP</div>
         </div>
+        <button onclick="removeFriend('${fid}','${p.username || ''}')" title="Remover amigo" style="padding:5px 8px;background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:6px;font-size:11px;cursor:pointer;line-height:1;transition:color .15s,border-color .15s;" onmouseover="this.style.color='#ef4444';this.style.borderColor='#ef4444'" onmouseout="this.style.color='';this.style.borderColor=''">✕</button>
       </div>`;
     }).join('');
   }
@@ -2810,6 +2811,21 @@ async function renderFriendsList() {
   }
 
   el.innerHTML = html;
+}
+
+async function removeFriend(friendId, friendName) {
+  if (!confirm(`Remover ${friendName || 'este amigo'} da sua lista?`)) return;
+  // Remove dos dois lados
+  await Promise.all([
+    supabaseClient.from('friends').delete().eq('user_id', currentUser.id).eq('friend_id', friendId),
+    supabaseClient.from('friends').delete().eq('user_id', friendId).eq('friend_id', currentUser.id),
+  ]);
+  showToast(`${friendName || 'Amigo'} removido.`);
+  await renderFriendsList();
+  // Atualiza contador no perfil
+  const { count } = await supabaseClient.from('friends').select('id', { count: 'exact', head: true }).eq('user_id', currentUser.id);
+  const el = document.getElementById('prof-friends');
+  if (el) el.textContent = count || 0;
 }
 
 async function addFriendByCode() {
