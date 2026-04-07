@@ -1264,63 +1264,66 @@ app.post('/api/chat', express.json(), async (req, res) => {
   if (!messages?.length) return res.status(400).json({ error: 'Mensagens vazias' });
 
   try {
+    const todayISO = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
     const today = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
-    // Usa chave dedicada para JARVIS se disponível (maior quota)
     const jarvisGenAI = process.env.GEMINI_KEY_JARVIS
       ? new (require('@google/generative-ai').GoogleGenerativeAI)(process.env.GEMINI_KEY_JARVIS)
       : genAI;
 
-    const jarvisModel = jarvisGenAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: `Você é o JARVIS, assistente pessoal inteligente do NexoraFlow. Hoje é ${today}.
-Você ajuda o usuário a registrar gastos, marcar hábitos, criar tarefas e consultar seus dados.
-Seja conciso, amigável e use emojis moderadamente. Sempre confirme o que foi feito.
-Quando o usuário disser "ontem", calcule corretamente a data anterior a hoje e passe no campo date.
-Na resposta final, confirme a data correta que foi usada.
-Responda sempre em português brasileiro.`,
-      tools: [{ functionDeclarations: JARVIS_TOOLS }],
-    });
+    const jarvisModel = jarvisGenAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
-    // Converter histórico para formato Gemini (deve começar com 'user')
-    const allMsgs = messages.slice(0, -1).map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }));
-    // Remove mensagens iniciais do model até encontrar o primeiro user
-    const firstUserIdx = allMsgs.findIndex(m => m.role === 'user');
-    const history = firstUserIdx >= 0 ? allMsgs.slice(firstUserIdx) : [];
-
-    const chat = jarvisModel.startChat({ history });
     const lastMsg = messages[messages.length - 1].content;
 
-    let finalReply = '';
+    // Usa Gemini para parsear intenção como JSON (sem function calling)
+    const parsePrompt = `Você é o JARVIS do NexoraFlow. Hoje é ${today} (${todayISO}). Ontem foi ${yesterday}.
 
-    // Loop agentico: Gemini pode chamar ferramentas múltiplas vezes
-    let result = await chat.sendMessage(lastMsg);
-    for (let i = 0; i < 5; i++) {
-      const response = result.response;
-      const candidate = response.candidates?.[0];
-      const parts = candidate?.content?.parts || [];
+Analise a mensagem e retorne APENAS um JSON válido (sem markdown, sem explicação):
 
-      const fnCalls = parts.filter(p => p.functionCall);
-      if (fnCalls.length === 0) {
-        finalReply = parts.filter(p => p.text).map(p => p.text).join('');
-        break;
-      }
+{
+  "action": "registrar_gasto" | "marcar_habito" | "criar_tarefa" | "consultar" | "conversa",
+  "params": {
+    // registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD" }
+    // marcar_habito:   { "habit_name": string }
+    // criar_tarefa:    { "text": string, "tag": string, "due_date": "YYYY-MM-DD", "due_time": "HH:MM" }
+    // consultar:       { "tipo": "gastos" | "habitos" | "tarefas" | "perfil" }
+    // conversa:        {}
+  },
+  "resposta_pendente": "mensagem curta confirmando o que vai fazer (antes de executar)"
+}
 
-      // Executa as ferramentas e devolve resultados
-      const fnResponses = [];
-      for (const part of fnCalls) {
-        const { name, args } = part.functionCall;
-        const output = await executarFerramenta(name, args, user.id);
-        fnResponses.push({ functionResponse: { name, response: { output } } });
-      }
+Categorias de gasto: Alimentação, Transporte, Saúde, Lazer, Moradia, Educação, Roupas, Outros
+Tags de tarefa: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros
 
-      result = await chat.sendMessage(fnResponses);
+Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"`;
+
+    const parseResult = await jarvisModel.generateContent(parsePrompt);
+    let parsed;
+    try {
+      const raw = parseResult.response.text().replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(raw);
+    } catch(e) {
+      parsed = { action: 'conversa', params: {}, resposta_pendente: '' };
     }
 
-    res.json({ reply: finalReply || 'Não consegui processar sua solicitação.' });
+    let toolResult = '';
+    if (parsed.action !== 'conversa') {
+      toolResult = await executarFerramenta(parsed.action, parsed.params, user.id);
+    }
+
+    // Segunda chamada: gera resposta final natural
+    const replyPrompt = `Você é o JARVIS do NexoraFlow. Hoje é ${today}.
+Responda de forma concisa e amigável em português brasileiro, usando emojis moderadamente.
+
+Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"
+${toolResult ? `Resultado da ação executada: ${toolResult}` : ''}
+${!toolResult ? 'Responda normalmente à mensagem do usuário.' : 'Confirme o que foi feito com base no resultado.'}`;
+
+    const replyResult = await jarvisModel.generateContent(replyPrompt);
+    const reply = replyResult.response.text().trim();
+
+    res.json({ reply });
   } catch(e) {
     console.error('[JARVIS ERROR]', e.message);
     res.status(500).json({ error: e.message });
