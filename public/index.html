@@ -3205,14 +3205,15 @@ async function renderFriendsList() {
 
 async function removeFriend(friendId, friendName) {
   if (!confirm(`Remover ${friendName || 'este amigo'} da sua lista?`)) return;
-  // Remove dos dois lados
-  await Promise.all([
-    supabaseClient.from('friends').delete().eq('user_id', currentUser.id).eq('friend_id', friendId),
-    supabaseClient.from('friends').delete().eq('user_id', friendId).eq('friend_id', currentUser.id),
-  ]);
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const token = session?.access_token;
+  await fetch('/api/friend/remove', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({ friendId }),
+  });
   showToast(`${friendName || 'Amigo'} removido.`);
   await renderFriendsList();
-  // Atualiza contador no perfil
   const { count } = await supabaseClient.from('friends').select('id', { count: 'exact', head: true }).eq('user_id', currentUser.id);
   const el = document.getElementById('prof-friends');
   if (el) el.textContent = count || 0;

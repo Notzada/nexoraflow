@@ -1080,12 +1080,33 @@ app.post('/api/friend/accept', express.json(), async (req, res) => {
   if (!request || request.to_id !== user.id || request.status !== 'pending')
     return res.status(400).json({ error: 'Solicitação inválida.' });
 
-  // Insere amizade bidirecional com service_role
-  await supabaseAdmin.from('friends').insert([
+  // Upsert amizade bidirecional (evita conflito se um lado já existia)
+  await supabaseAdmin.from('friends').upsert([
     { user_id: request.from_id, friend_id: request.to_id },
     { user_id: request.to_id,   friend_id: request.from_id },
-  ]);
+  ], { onConflict: 'user_id,friend_id', ignoreDuplicates: true });
   await supabaseAdmin.from('friend_requests').update({ status: 'accepted' }).eq('id', requestId);
+
+  res.json({ ok: true });
+});
+
+// Remover amigo (bidirecional via admin, evita bloqueio de RLS)
+app.post('/api/friend/remove', express.json(), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { friendId } = req.body;
+  if (!friendId) return res.status(400).json({ error: 'friendId obrigatório.' });
+
+  await Promise.all([
+    supabaseAdmin.from('friends').delete().eq('user_id', user.id).eq('friend_id', friendId),
+    supabaseAdmin.from('friends').delete().eq('user_id', friendId).eq('friend_id', user.id),
+    // Limpa também os friend_requests entre os dois para permitir re-adição limpa
+    supabaseAdmin.from('friend_requests').delete().or(`and(from_id.eq.${user.id},to_id.eq.${friendId}),and(from_id.eq.${friendId},to_id.eq.${user.id})`),
+  ]);
 
   res.json({ ok: true });
 });
