@@ -1257,7 +1257,7 @@ app.post('/api/chat', express.json(), async (req, res) => {
       ? new (require('@google/generative-ai').GoogleGenerativeAI)(process.env.GEMINI_KEY_JARVIS)
       : genAI;
 
-    const JARVIS_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+    const JARVIS_MODELS = ['gemini-2.0-flash'];
 
     async function jarvisGenerate(prompt) {
       let lastErr;
