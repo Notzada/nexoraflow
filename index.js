@@ -1253,31 +1253,51 @@ app.post('/api/chat', express.json(), async (req, res) => {
     const yesterday = yesterdayDate.toISOString().split('T')[0];
     const today = todayDate.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
-    const jarvisGenAI = process.env.GEMINI_KEY_JARVIS
-      ? new (require('@google/generative-ai').GoogleGenerativeAI)(process.env.GEMINI_KEY_JARVIS)
-      : genAI;
-
-    const JARVIS_MODELS = ['gemini-2.0-flash'];
-
     async function jarvisGenerate(prompt) {
+      // Tenta Groq primeiro (14.400 req/dia grátis), depois Gemini como fallback
+      if (process.env.GROQ_KEY) {
+        try {
+          const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.GROQ_KEY}` },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.3,
+              max_tokens: 1024,
+            }),
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            return data.choices[0].message.content;
+          }
+          console.warn('[NEXO] Groq falhou:', resp.status, await resp.text());
+        } catch(e) {
+          console.warn('[NEXO] Groq erro:', e.message);
+        }
+      }
+
+      // Fallback: Gemini
+      const nexoGenAI = process.env.GEMINI_KEY_JARVIS
+        ? new (require('@google/generative-ai').GoogleGenerativeAI)(process.env.GEMINI_KEY_JARVIS)
+        : genAI;
       let lastErr;
-      for (const modelName of JARVIS_MODELS) {
+      for (const modelName of ['gemini-2.0-flash', 'gemini-flash-latest']) {
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
-            const m = jarvisGenAI.getGenerativeModel({ model: modelName });
+            const m = nexoGenAI.getGenerativeModel({ model: modelName });
             const result = await m.generateContent(prompt);
             return result.response.text();
           } catch(e) {
             lastErr = e;
-            const is503 = e.message && e.message.includes('503');
-            const is429 = e.message && e.message.includes('429');
+            const is503 = e.message?.includes('503');
+            const is429 = e.message?.includes('429');
             if ((is429 || is503) && attempt < 2) {
-              // Aguarda antes de tentar de novo: 429 (RPM) costuma resetar em segundos
               await new Promise(r => setTimeout(r, is429 ? 5000 : 1500));
               continue;
             }
-            if (is429 || is503) break; // esgotou tentativas → próximo modelo
-            throw e; // outros erros sobem direto
+            if (is429 || is503) break;
+            throw e;
           }
         }
       }
