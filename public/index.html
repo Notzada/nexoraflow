@@ -912,6 +912,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     <div class="mob-menu-item" onclick="showPage('verify',null);closeMobMenu()">✅ Verificações</div>
     <div class="mob-menu-item" onclick="showPage('events',null);closeMobMenu()">⚡ Eventos</div>
     <div class="mob-menu-item" onclick="showPage('settings',null);closeMobMenu()">⚙️ Configurações</div>
+    <div class="mob-menu-item" id="mob-patch-item" onclick="openPatchNotes();closeMobMenu()" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>🆕 Novidades</span>
+      <span id="mob-patch-dot" style="display:none;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);"></span>
+    </div>
     <div class="mob-menu-item" style="color:var(--red);" onclick="signOut()">⏻ Sair da conta</div>
   </div>
 </div>
@@ -2180,6 +2184,8 @@ function openPatchNotes() {
   document.getElementById('modal-patch').style.display='flex';
   localStorage.setItem('nexora_patch_seen', PATCH_VERSION);
   document.getElementById('patch-dot').style.display='none';
+  const mobDot = document.getElementById('mob-patch-dot');
+  if (mobDot) mobDot.style.display='none';
 }
 function closePatchNotes() {
   document.getElementById('modal-patch').style.display='none';
@@ -2188,6 +2194,8 @@ function checkPatchNotes() {
   const seen = localStorage.getItem('nexora_patch_seen');
   if (seen !== PATCH_VERSION) {
     document.getElementById('patch-dot').style.display='block';
+    const mobDot = document.getElementById('mob-patch-dot');
+    if (mobDot) mobDot.style.display='block';
     // auto-show after a short delay so the app loads first
     setTimeout(openPatchNotes, 1200);
   }
