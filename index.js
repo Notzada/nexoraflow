@@ -1183,20 +1183,26 @@ async function executarFerramenta(tool_name, tool_input, userId, clientNow, tzOf
     if (tool_name === 'registrar_gasto') {
       const { category, description } = tool_input;
       const amount = parseFloat(tool_input.amount);
-      // Se tem data específica: usa essa data mas mantém horário local do cliente
+      // Calcula created_at considerando data e horário informados + fuso do cliente
       // tzOffset em minutos (ex: -180 = UTC-3 Brasil). clientNow é ISO UTC atual do cliente.
       let created_at;
-      if (tool_input.date && clientNow && tzOffset !== undefined) {
-        // Extrai HH:MM:SS do horário local do cliente
-        const localNow = new Date(new Date(clientNow).getTime() - tzOffset * 60000);
-        const timeStr = localNow.toISOString().split('T')[1]; // ex: "22:08:33.000Z"
-        // Combina data especificada + horário local do cliente, convertendo de volta pra UTC
-        const combined = new Date(tool_input.date + 'T' + timeStr.replace('Z', '') + 'Z');
-        combined.setTime(combined.getTime() + tzOffset * 60000); // converte local→UTC
-        created_at = combined.toISOString();
-      } else if (tool_input.date) {
-        // Sem info de fuso: usa meio-dia UTC (evita virar dia no Brasil)
-        created_at = new Date(tool_input.date + 'T15:00:00Z').toISOString();
+      const dateStr = tool_input.date; // YYYY-MM-DD ou null
+      const timeStr = tool_input.time; // HH:MM ou null (se usuário especificou horário)
+
+      if (dateStr && timeStr) {
+        // Data e horário explícitos: combina e converte fuso local→UTC
+        const offsetMs = (tzOffset || 0) * 60000;
+        const localMs = new Date(dateStr + 'T' + timeStr + ':00').getTime();
+        created_at = new Date(localMs + offsetMs).toISOString();
+      } else if (dateStr && clientNow && tzOffset !== undefined) {
+        // Data específica mas sem horário: usa horário atual do cliente
+        const offsetMs = tzOffset * 60000;
+        const localNow = new Date(new Date(clientNow).getTime() - offsetMs);
+        const localTime = localNow.toISOString().split('T')[1].replace('Z', '');
+        created_at = new Date(new Date(dateStr + 'T' + localTime).getTime() + offsetMs).toISOString();
+      } else if (dateStr) {
+        // Sem info de fuso: usa meio-dia BRT (UTC-3) para não virar dia
+        created_at = new Date(dateStr + 'T15:00:00Z').toISOString();
       } else {
         created_at = clientNow || new Date().toISOString();
       }
@@ -1328,7 +1334,7 @@ Se houver múltiplos gastos/tarefas/hábitos na mensagem, retorne um item para c
   {
     "action": "registrar_gasto" | "marcar_habito" | "criar_tarefa" | "consultar" | "conversa",
     "params": {
-      // registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD" }
+      // registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD", "time": "HH:MM" (opcional, só se mencionado) }
       // marcar_habito:   { "habit_name": string }
       // criar_tarefa:    { "text": string, "tag": string, "due_date": "YYYY-MM-DD", "due_time": "HH:MM" }
       // consultar:       { "tipo": "gastos" | "habitos" | "tarefas" | "perfil" }
