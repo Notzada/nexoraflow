@@ -1320,7 +1320,7 @@ PARTE 1 — Retorne um array JSON com as ações a executar (sem markdown):
 [{ "action": "registrar_gasto"|"marcar_habito"|"criar_habito"|"criar_tarefa"|"consultar"|"conversa", "params": {...} }]
 
 Schemas de params:
-- registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD", "time": "HH:MM" (opcional) }
+- registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD" (use ${todayISO} se não mencionou data; só use outra data se o usuário disse explicitamente "ontem", "dia X", etc.), "time": "HH:MM" (opcional) }
 - marcar_habito:   { "habit_name": string }
 - criar_habito:    { "habit_name": string, "icon": emoji, "color": "#hex" }
 - criar_tarefa:    { "text": string, "tag": string, "due_date": "YYYY-MM-DD", "due_time": "HH:MM" }
