@@ -986,6 +986,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     </select>
     <div class="modal-label">Data <span style="color:var(--muted);font-size:9px">(deixe em branco para hoje)</span></div>
     <input class="modal-input" id="exp-date-input" type="date">
+    <label style="display:flex;align-items:center;gap:10px;margin-top:12px;cursor:pointer;user-select:none" onclick="toggleFixedExpense()">
+      <div id="exp-fixed-toggle" style="width:36px;height:20px;border-radius:10px;background:var(--border);position:relative;transition:background .2s;flex-shrink:0">
+        <div id="exp-fixed-knob" style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s"></div>
+      </div>
+      <span style="font-size:12px;color:var(--muted)">Gasto fixo mensal <span style="color:var(--accent)">(repete por 12 meses)</span></span>
+    </label>
+    <input type="hidden" id="exp-fixed-input" value="0">
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeModal('modal-expense')">Cancelar</button>
       <button class="modal-confirm" onclick="confirmAddExpense()">Registrar →</button>
@@ -2059,13 +2066,29 @@ function updateInstallmentPreview() {
   el.textContent = (inst > 1 && amt > 0) ? `= R$${(amt/inst).toFixed(2)}/mês` : '';
 }
 
+function toggleFixedExpense() {
+  const isFixed = document.getElementById('exp-fixed-input').value === '1';
+  const newVal = isFixed ? '0' : '1';
+  document.getElementById('exp-fixed-input').value = newVal;
+  document.getElementById('exp-fixed-toggle').style.background = newVal === '1' ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('exp-fixed-knob').style.left = newVal === '1' ? '18px' : '2px';
+  // Desabilita parcelas quando fixo está ativo (são conceitos diferentes)
+  const instEl = document.getElementById('exp-inst-input');
+  instEl.disabled = newVal === '1';
+  if (newVal === '1') { instEl.value = '1'; document.getElementById('inst-preview').textContent = ''; }
+}
+
 function addExpensePrompt() {
   document.getElementById('exp-desc-input').value='';
   document.getElementById('exp-amt-input').value='';
   document.getElementById('exp-inst-input').value='1';
+  document.getElementById('exp-inst-input').disabled=false;
   document.getElementById('exp-cat-input').value='Alimentação';
   document.getElementById('exp-date-input').value='';
   document.getElementById('inst-preview').textContent='';
+  document.getElementById('exp-fixed-input').value='0';
+  document.getElementById('exp-fixed-toggle').style.background='var(--border)';
+  document.getElementById('exp-fixed-knob').style.left='2px';
   document.getElementById('modal-expense').style.display='flex';
   setTimeout(()=>document.getElementById('exp-desc-input').focus(),100);
 }
@@ -2076,11 +2099,25 @@ async function confirmAddExpense() {
   const inst     = parseInt(document.getElementById('exp-inst-input').value) || 1;
   const cat      = document.getElementById('exp-cat-input').value;
   const dateVal  = document.getElementById('exp-date-input').value;
+  const isFixed  = document.getElementById('exp-fixed-input').value === '1';
   const baseDate = dateVal ? new Date(dateVal + 'T12:00:00') : new Date();
   if (!desc || !amt || isNaN(amt)) return;
 
-  if (inst <= 1) {
+  if (isFixed) {
+    // Gasto fixo: mesmo valor, 12 meses seguidos
+    const groupId = crypto.randomUUID();
+    const rows = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(baseDate); d.setMonth(d.getMonth() + i);
+      rows.push({ description: desc, amount: amt, category: cat, source: 'manual', installments: 12, installment_current: i + 1, installment_group: groupId, created_at: d.toISOString(), user_id: currentUser.id });
+    }
+    await supabaseClient.from('expenses').insert(rows);
+    closeModal('modal-expense');
+    showToast('🔁 Gasto fixo registrado por 12 meses!');
+  } else if (inst <= 1) {
     await supabaseClient.from('expenses').insert({description:desc, amount:amt, category:cat, source:'manual', installments:1, installment_current:1, created_at:baseDate.toISOString(), user_id:currentUser.id});
+    closeModal('modal-expense');
+    showToast('💸 Gasto registrado!');
   } else {
     const parcela = amt / inst;
     const groupId = crypto.randomUUID();
@@ -2090,10 +2127,10 @@ async function confirmAddExpense() {
       rows.push({ description:`${desc} (${i+1}/${inst})`, amount:parseFloat(parcela.toFixed(2)), category:cat, source:'manual', installments:inst, installment_current:i+1, installment_group:groupId, created_at:d.toISOString(), user_id:currentUser.id });
     }
     await supabaseClient.from('expenses').insert(rows);
+    closeModal('modal-expense');
+    showToast(`💳 ${inst}x de R$${(amt/inst).toFixed(2)} registrado!`);
   }
 
-  closeModal('modal-expense');
-  showToast(inst > 1 ? `💳 ${inst}x de R$${(amt/inst).toFixed(2)} registrado!` : '💸 Gasto registrado!');
   loadDashboard(); loadExpenses();
 }
 
