@@ -1260,13 +1260,16 @@ app.post('/api/chat', express.json(), async (req, res) => {
   const { data: { user } } = await supabaseAdmin.auth.getUser(token);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { messages } = req.body;
+  const { messages, clientDate } = req.body;
   if (!messages?.length) return res.status(400).json({ error: 'Mensagens vazias' });
 
   try {
-    const todayISO = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    const today = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    // Use client local date to avoid UTC midnight timezone issues
+    const todayISO = clientDate || new Date().toISOString().split('T')[0];
+    const todayDate = new Date(todayISO + 'T12:00:00Z');
+    const yesterdayDate = new Date(todayDate.getTime() - 86400000);
+    const yesterday = yesterdayDate.toISOString().split('T')[0];
+    const today = todayDate.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
     const jarvisGenAI = process.env.GEMINI_KEY_JARVIS
       ? new (require('@google/generative-ai').GoogleGenerativeAI)(process.env.GEMINI_KEY_JARVIS)

@@ -3320,7 +3320,7 @@ async function sendChat() {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ messages: apiMessages }),
+      body: JSON.stringify({ messages: apiMessages, clientDate: new Date().toLocaleDateString('sv') }),
     });
     const data = await res.json();
     jarvisHistory = jarvisHistory.filter(m => m.role !== 'typing');
