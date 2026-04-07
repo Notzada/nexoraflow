@@ -1588,8 +1588,11 @@ function expenseHTML(e, showDel=false) {
   const icon  = isIncome ? '💰' : ({Alimentação:'🍽️',Transporte:'🚗',Lazer:'🎬',Saúde:'💊',Casa:'🏠',Educação:'📚',Roupas:'👗',Outros:'💼'}[e.category]||'💰');
   const date  = new Date(e.created_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
   const descEsc = e.description.replace(/'/g,"\\'");
-  const isInstallment = e.installments > 1 && e.installment_group;
-  const instBadge = isInstallment ? `<span class="inst-badge">${e.installment_current}/${e.installments}x</span>` : '';
+  const isFixed = e.source === 'fixed';
+  const isInstallment = !isFixed && e.installments > 1 && e.installment_group;
+  const instBadge = isFixed
+    ? `<span class="inst-badge" style="background:rgba(0,200,150,.12);color:#00c896;border-color:rgba(0,200,150,.3)">FIXO</span>`
+    : isInstallment ? `<span class="inst-badge">${e.installment_current}/${e.installments}x</span>` : '';
   const group = e.installment_group || '';
   const inst  = e.installments || 1;
   const amountHTML = isIncome
@@ -2109,7 +2112,7 @@ async function confirmAddExpense() {
     const rows = [];
     for (let i = 0; i < 12; i++) {
       const d = new Date(baseDate); d.setMonth(d.getMonth() + i);
-      rows.push({ description: desc, amount: amt, category: cat, source: 'manual', installments: 12, installment_current: i + 1, installment_group: groupId, created_at: d.toISOString(), user_id: currentUser.id });
+      rows.push({ description: desc, amount: amt, category: cat, source: 'fixed', installments: 12, installment_current: i + 1, installment_group: groupId, created_at: d.toISOString(), user_id: currentUser.id });
     }
     await supabaseClient.from('expenses').insert(rows);
     closeModal('modal-expense');
