@@ -1290,46 +1290,60 @@ app.post('/api/chat', express.json(), async (req, res) => {
       .map(m => `${m.role === 'user' ? 'Usuário' : 'NEXO'}: ${m.content}`)
       .join('\n');
 
-    // Usa Gemini para parsear intenção como JSON (sem function calling)
-    const parsePrompt = `Você é o NEXO do NexoraFlow. Hoje é ${today} (${todayISO}). Ontem foi ${yesterday}.
+    // Chamada única: parseia intenção E gera resposta ao mesmo tempo
+    const prompt = `Você é o NEXO, assistente pessoal do NexoraFlow. Hoje é ${today} (${todayISO}). Ontem foi ${yesterday}.
 
-Analise a mensagem do usuário considerando o contexto da conversa recente.
-Se o usuário confirmar algo que o NEXO perguntou (ex: "sim", "pode", "vai", "cria"), execute a ação que foi proposta.
-Retorne APENAS um array JSON válido (sem markdown, sem explicação).
-Se houver múltiplos gastos/tarefas/hábitos, retorne um item para cada um.
+Analise a mensagem do usuário e responda em duas partes separadas pelo marcador ---ACTIONS---:
 
-[
-  {
-    "action": "registrar_gasto" | "marcar_habito" | "criar_habito" | "criar_tarefa" | "consultar" | "conversa",
-    "params": {
-      // registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD", "time": "HH:MM" (opcional) }
-      // marcar_habito:   { "habit_name": string }
-      // criar_habito:    { "habit_name": string, "icon": emoji, "color": "#hexcor" }
-      // criar_tarefa:    { "text": string, "tag": string, "due_date": "YYYY-MM-DD", "due_time": "HH:MM" }
-      // consultar:       { "tipo": "gastos" | "habitos" | "tarefas" | "perfil" }
-      // conversa:        {}
-    }
-  }
-]
+PARTE 1 — Retorne um array JSON com as ações a executar (sem markdown):
+[{ "action": "registrar_gasto"|"marcar_habito"|"criar_habito"|"criar_tarefa"|"consultar"|"conversa", "params": {...} }]
 
-Exemplos:
-- "gastei 30 em comida e 20 no uber" → dois itens registrar_gasto
-- "sim" (após NEXO perguntar se cria hábito "academia") → criar_habito com habit_name "academia"
-- "pode criar" (após NEXO perguntar algo) → executa a ação que foi proposta
+Schemas de params:
+- registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD", "time": "HH:MM" (opcional) }
+- marcar_habito:   { "habit_name": string }
+- criar_habito:    { "habit_name": string, "icon": emoji, "color": "#hex" }
+- criar_tarefa:    { "text": string, "tag": string, "due_date": "YYYY-MM-DD", "due_time": "HH:MM" }
+- consultar:       { "tipo": "gastos"|"habitos"|"tarefas"|"perfil" }
+- conversa:        {}
 
-Categorias de gasto: Alimentação, Transporte, Saúde, Lazer, Moradia, Educação, Roupas, Outros
-Tags de tarefa: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros
+Regras:
+- Se houver múltiplos itens (ex: "gastei 30 em comida e 20 no uber"), retorne um item para cada
+- Se usuário confirmar algo proposto antes (ex: "sim", "pode"), execute a ação pendente
+- Categorias de gasto: Alimentação, Transporte, Saúde, Lazer, Moradia, Educação, Roupas, Outros
+- Tags de tarefa: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros
 
-${recentHistory ? `Conversa recente:\n${recentHistory}\n` : ''}Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"`;
+---ACTIONS---
 
-    const parseText = await jarvisGenerate(parsePrompt);
-    let actions;
-    try {
-      const raw = parseText.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(raw);
-      actions = Array.isArray(parsed) ? parsed : [parsed];
-    } catch(e) {
-      actions = [{ action: 'conversa', params: {} }];
+PARTE 2 — Resposta natural em português brasileiro, concisa e amigável, usando emojis moderadamente.
+Se executou ações, confirme o que foi feito. Se for conversa, responda normalmente.
+NÃO repita o JSON na resposta.
+
+${recentHistory ? `Conversa recente:\n${recentHistory}\n\n` : ''}Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"`;
+
+    const fullText = await jarvisGenerate(prompt);
+
+    // Separa JSON das ações da resposta natural
+    const parts = fullText.split('---ACTIONS---');
+    let actions = [{ action: 'conversa', params: {} }];
+    let reply = '';
+
+    if (parts.length >= 2) {
+      try {
+        const raw = parts[0].replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(raw);
+        actions = Array.isArray(parsed) ? parsed : [parsed];
+      } catch(_) {}
+      reply = parts[1].trim();
+    } else {
+      // Fallback: tenta extrair JSON do início
+      try {
+        const jsonMatch = fullText.match(/\[[\s\S]*?\]/);
+        if (jsonMatch) {
+          actions = JSON.parse(jsonMatch[0]);
+          reply = fullText.slice(jsonMatch.index + jsonMatch[0].length).trim();
+        }
+      } catch(_) {}
+      if (!reply) reply = fullText.trim();
     }
 
     const toolResults = [];
@@ -1339,20 +1353,13 @@ ${recentHistory ? `Conversa recente:\n${recentHistory}\n` : ''}Mensagem do usuá
         if (r) toolResults.push(r);
       }
     }
-    const toolResult = toolResults.join('\n');
 
-    // Segunda chamada: gera resposta final natural
-    const replyPrompt = `Você é o NEXO do NexoraFlow. Hoje é ${today}.
-Responda de forma concisa e amigável em português brasileiro, usando emojis moderadamente.
+    // Se executou ações mas a resposta não menciona resultado, gera uma confirmação simples
+    if (toolResults.length > 0 && reply.length < 10) {
+      reply = toolResults.map(r => `✅ ${r}`).join('\n');
+    }
 
-Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"
-${toolResult ? `Resultado da ação executada: ${toolResult}` : ''}
-${!toolResult ? 'Responda normalmente à mensagem do usuário.' : 'Confirme o que foi feito com base no resultado.'}`;
-
-    const replyText = await jarvisGenerate(replyPrompt);
-    const reply = replyText.trim();
-
-    res.json({ reply });
+    res.json({ reply: reply || '✅ Feito!' });
   } catch(e) {
     console.error('[JARVIS ERROR]', e.message);
     res.status(500).json({ error: e.message });
