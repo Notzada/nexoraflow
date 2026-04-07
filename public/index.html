@@ -528,7 +528,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     </div>
     <div class="nav-section">Finanças</div>
     <div class="nav-item" onclick="showPage('expenses',this)">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="14" height="10" rx="1.5"/><path d="M4 4V3a1 1 0 011-1h6a1 1 0 011 1v1"/></svg>Gastos
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="14" height="10" rx="1.5"/><path d="M4 4V3a1 1 0 011-1h6a1 1 0 011 1v1"/></svg>Finanças
     </div>
     <div class="nav-item" onclick="showPage('goals',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14l4-4 3 2 5-7"/></svg>Metas
@@ -635,14 +635,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     <!-- GASTOS -->
     <div class="page" id="page-expenses">
       <div class="page-header">
-        <div><div class="page-title">Gastos</div><div class="page-subtitle">Registre pelo Telegram ou manualmente</div></div>
+        <div><div class="page-title">Finanças</div><div class="page-subtitle">Gastos e receitas do mês</div></div>
         <div style="display:flex;align-items:center;gap:10px">
           <div class="month-nav">
             <button class="month-btn" onclick="changeMonth(-1)">‹</button>
             <span class="month-label" id="exp-month-label">—</span>
             <button class="month-btn" onclick="changeMonth(1)" id="exp-next-btn">›</button>
           </div>
-          <button class="add-btn" onclick="addExpensePrompt()">+ Manual</button>
+          <button class="add-btn" onclick="addExpensePrompt()">+ Registrar</button>
         </div>
       </div>
       <div class="stats-grid">
@@ -844,7 +844,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     </div>
     <div class="mob-item" onclick="showPage('expenses',this)">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4z"/><path d="M5 4V2h6v2"/></svg>
-      <span>Gastos</span>
+      <span>Finanças</span>
     </div>
     <div class="mob-item" onclick="showPage('ranking',this)">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V9M6 14V5M10 14V7M14 14V2"/></svg>
@@ -975,43 +975,62 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
   </div>
 </div>
 
-<!-- Modal: Adicionar Gasto -->
+<!-- Modal: Registrar Transação -->
 <div class="modal-overlay" id="modal-expense" style="display:none" onclick="if(event.target===this)closeModal('modal-expense')">
   <div class="modal-box">
-    <div class="modal-title">// Registrar Gasto</div>
-    <div class="modal-label">Descrição</div>
-    <input class="modal-input" id="exp-desc-input" placeholder="ex: Almoço, Uber, Netflix...">
-    <div class="modal-label">Valor Total (R$)</div>
-    <input class="modal-input" id="exp-amt-input" type="number" step="0.01" placeholder="0.00" oninput="updateInstallmentPreview()">
-    <div class="modal-label">Parcelas</div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <select class="modal-input" id="exp-inst-input" style="cursor:pointer;width:100px" onchange="updateInstallmentPreview()">
-        <option value="1">À vista</option>
-        <option value="2">2x</option><option value="3">3x</option><option value="4">4x</option>
-        <option value="5">5x</option><option value="6">6x</option><option value="8">8x</option>
-        <option value="10">10x</option><option value="12">12x</option><option value="18">18x</option>
-        <option value="24">24x</option><option value="36">36x</option>
-      </select>
-      <div id="inst-preview" style="font-size:11px;color:var(--muted);font-family:var(--font-mono)"></div>
+    <div class="modal-title" id="exp-modal-title">// Registrar Gasto</div>
+    <!-- Toggle Gasto / Receita -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button id="exp-type-gasto" onclick="setExpenseType('gasto')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#080c14;font-family:var(--font-display);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.5px;">💸 GASTO</button>
+      <button id="exp-type-receita" onclick="setExpenseType('receita')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--font-display);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.5px;">💰 RECEITA</button>
     </div>
-    <div class="modal-label">Categoria</div>
-    <select class="modal-input" id="exp-cat-input" style="cursor:pointer">
-      <option>Alimentação</option><option>Transporte</option><option>Lazer</option>
-      <option>Saúde</option><option>Casa</option><option>Educação</option>
-      <option>Roupas</option><option>Outros</option>
-    </select>
+    <input type="hidden" id="exp-type-input" value="gasto">
+    <div class="modal-label">Descrição</div>
+    <input class="modal-input" id="exp-desc-input" placeholder="ex: Almoço, Uber, Salário...">
+    <div class="modal-label">Valor (R$)</div>
+    <input class="modal-input" id="exp-amt-input" type="number" step="0.01" placeholder="0.00" oninput="updateInstallmentPreview()">
+    <div id="exp-parcelas-section">
+      <div class="modal-label">Parcelas</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="modal-input" id="exp-inst-input" style="cursor:pointer;width:100px" onchange="updateInstallmentPreview()">
+          <option value="1">À vista</option>
+          <option value="2">2x</option><option value="3">3x</option><option value="4">4x</option>
+          <option value="5">5x</option><option value="6">6x</option><option value="8">8x</option>
+          <option value="10">10x</option><option value="12">12x</option><option value="18">18x</option>
+          <option value="24">24x</option><option value="36">36x</option>
+        </select>
+        <div id="inst-preview" style="font-size:11px;color:var(--muted);font-family:var(--font-mono)"></div>
+      </div>
+    </div>
+    <div id="exp-cat-section">
+      <div class="modal-label">Categoria</div>
+      <select class="modal-input" id="exp-cat-input" style="cursor:pointer">
+        <option>Alimentação</option><option>Transporte</option><option>Lazer</option>
+        <option>Saúde</option><option>Casa</option><option>Educação</option>
+        <option>Roupas</option><option>Outros</option>
+      </select>
+    </div>
+    <div id="exp-receita-cat-section" style="display:none">
+      <div class="modal-label">Categoria</div>
+      <select class="modal-input" id="exp-receita-cat-input" style="cursor:pointer">
+        <option>Salário</option><option>Freelance</option><option>Investimento</option>
+        <option>Presente</option><option>Reembolso</option><option>Outros</option>
+      </select>
+    </div>
     <div class="modal-label">Data <span style="color:var(--muted);font-size:9px">(deixe em branco para hoje)</span></div>
     <input class="modal-input" id="exp-date-input" type="date">
-    <label style="display:flex;align-items:center;gap:10px;margin-top:12px;cursor:pointer;user-select:none" onclick="toggleFixedExpense()">
-      <div id="exp-fixed-toggle" style="width:36px;height:20px;border-radius:10px;background:var(--border);position:relative;transition:background .2s;flex-shrink:0">
-        <div id="exp-fixed-knob" style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s"></div>
-      </div>
-      <span style="font-size:12px;color:var(--muted)">Gasto fixo mensal <span style="color:var(--accent)">(repete por 12 meses)</span></span>
-    </label>
+    <div id="exp-fixed-section">
+      <label style="display:flex;align-items:center;gap:10px;margin-top:12px;cursor:pointer;user-select:none" onclick="toggleFixedExpense()">
+        <div id="exp-fixed-toggle" style="width:36px;height:20px;border-radius:10px;background:var(--border);position:relative;transition:background .2s;flex-shrink:0">
+          <div id="exp-fixed-knob" style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s"></div>
+        </div>
+        <span style="font-size:12px;color:var(--muted)">Fixo mensal <span style="color:var(--accent)">(repete por 12 meses)</span></span>
+      </label>
+    </div>
     <input type="hidden" id="exp-fixed-input" value="0">
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeModal('modal-expense')">Cancelar</button>
-      <button class="modal-confirm" onclick="confirmAddExpense()">Registrar →</button>
+      <button class="modal-confirm" id="exp-confirm-btn" onclick="confirmAddExpense()">Registrar →</button>
     </div>
   </div>
 </div>
@@ -2086,19 +2105,34 @@ function updateInstallmentPreview() {
   el.textContent = (inst > 1 && amt > 0) ? `= R$${(amt/inst).toFixed(2)}/mês` : '';
 }
 
+function setExpenseType(type) {
+  document.getElementById('exp-type-input').value = type;
+  const isReceita = type === 'receita';
+  // Botões
+  document.getElementById('exp-type-gasto').style.cssText   = `flex:1;padding:8px;border-radius:8px;border:1px solid ${isReceita?'var(--border2)':'var(--accent)'};background:${isReceita?'transparent':'var(--accent)'};color:${isReceita?'var(--muted)':'#080c14'};font-family:var(--font-display);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.5px;`;
+  document.getElementById('exp-type-receita').style.cssText = `flex:1;padding:8px;border-radius:8px;border:1px solid ${isReceita?'#22c55e':'var(--border2)'};background:${isReceita?'#22c55e':'transparent'};color:${isReceita?'#080c14':'var(--muted)'};font-family:var(--font-display);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.5px;`;
+  // Título e campos
+  document.getElementById('exp-modal-title').textContent = isReceita ? '// Registrar Receita' : '// Registrar Gasto';
+  document.getElementById('exp-parcelas-section').style.display = isReceita ? 'none' : '';
+  document.getElementById('exp-fixed-section').style.display    = isReceita ? 'none' : '';
+  document.getElementById('exp-cat-section').style.display      = isReceita ? 'none' : '';
+  document.getElementById('exp-receita-cat-section').style.display = isReceita ? '' : 'none';
+  document.getElementById('exp-desc-input').placeholder = isReceita ? 'ex: Salário, Freelance, Dividendos...' : 'ex: Almoço, Uber, Netflix...';
+}
+
 function toggleFixedExpense() {
   const isFixed = document.getElementById('exp-fixed-input').value === '1';
   const newVal = isFixed ? '0' : '1';
   document.getElementById('exp-fixed-input').value = newVal;
   document.getElementById('exp-fixed-toggle').style.background = newVal === '1' ? 'var(--accent)' : 'var(--border)';
   document.getElementById('exp-fixed-knob').style.left = newVal === '1' ? '18px' : '2px';
-  // Desabilita parcelas quando fixo está ativo (são conceitos diferentes)
   const instEl = document.getElementById('exp-inst-input');
   instEl.disabled = newVal === '1';
   if (newVal === '1') { instEl.value = '1'; document.getElementById('inst-preview').textContent = ''; }
 }
 
 function addExpensePrompt() {
+  setExpenseType('gasto');
   document.getElementById('exp-desc-input').value='';
   document.getElementById('exp-amt-input').value='';
   document.getElementById('exp-inst-input').value='1';
@@ -2114,14 +2148,24 @@ function addExpensePrompt() {
 }
 
 async function confirmAddExpense() {
-  const desc     = document.getElementById('exp-desc-input').value.trim();
-  const amt      = parseFloat(document.getElementById('exp-amt-input').value);
-  const inst     = parseInt(document.getElementById('exp-inst-input').value) || 1;
-  const cat      = document.getElementById('exp-cat-input').value;
-  const dateVal  = document.getElementById('exp-date-input').value;
-  const isFixed  = document.getElementById('exp-fixed-input').value === '1';
-  const baseDate = dateVal ? new Date(dateVal + 'T12:00:00') : new Date();
+  const desc      = document.getElementById('exp-desc-input').value.trim();
+  const amt       = parseFloat(document.getElementById('exp-amt-input').value);
+  const isReceita = document.getElementById('exp-type-input').value === 'receita';
+  const inst      = isReceita ? 1 : (parseInt(document.getElementById('exp-inst-input').value) || 1);
+  const cat       = isReceita ? document.getElementById('exp-receita-cat-input').value : document.getElementById('exp-cat-input').value;
+  const finalCat  = isReceita ? 'Renda' : cat;
+  const dateVal   = document.getElementById('exp-date-input').value;
+  const isFixed   = !isReceita && document.getElementById('exp-fixed-input').value === '1';
+  const baseDate  = dateVal ? new Date(dateVal + 'T12:00:00') : new Date();
   if (!desc || !amt || isNaN(amt)) return;
+
+  if (isReceita) {
+    await supabaseClient.from('expenses').insert({ description: desc, amount: amt, category: finalCat, source: 'manual', installments: 1, installment_current: 1, created_at: baseDate.toISOString(), user_id: currentUser.id });
+    closeModal('modal-expense');
+    showToast('💰 Receita registrada!');
+    loadDashboard(); loadExpenses();
+    return;
+  }
 
   if (isFixed) {
     // Gasto fixo: mesmo valor, 12 meses seguidos
