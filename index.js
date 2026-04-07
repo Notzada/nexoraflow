@@ -1183,9 +1183,10 @@ async function executarFerramenta(tool_name, tool_input, userId) {
     if (tool_name === 'registrar_gasto') {
       const { category, description } = tool_input;
       const amount = parseFloat(tool_input.amount);
+      const created_at = tool_input.date ? new Date(tool_input.date).toISOString() : new Date().toISOString();
       const { data: inserted, error } = await supabaseAdmin.from('expenses').insert({
         user_id: userId, amount, category, description,
-        source: 'jarvis', installments: 1, installment_current: 1,
+        source: 'jarvis', installments: 1, installment_current: 1, created_at,
       }).select().single();
       console.log('[JARVIS INSERT]', inserted?.id, error?.message);
       if (error) return `Erro ao registrar gasto: ${error.message}`;
