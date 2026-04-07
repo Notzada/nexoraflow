@@ -1266,7 +1266,12 @@ app.post('/api/chat', express.json(), async (req, res) => {
   try {
     const today = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
-    const jarvisModel = genAI.getGenerativeModel({
+    // Usa chave dedicada para JARVIS se disponível (maior quota)
+    const jarvisGenAI = process.env.GEMINI_KEY_JARVIS
+      ? new (require('@google/generative-ai').GoogleGenerativeAI)(process.env.GEMINI_KEY_JARVIS)
+      : genAI;
+
+    const jarvisModel = jarvisGenAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
       systemInstruction: `Você é o JARVIS, assistente pessoal inteligente do NexoraFlow. Hoje é ${today}.
 Você ajuda o usuário a registrar gastos, marcar hábitos, criar tarefas e consultar seus dados.
@@ -1275,7 +1280,7 @@ Quando o usuário disser "ontem", calcule corretamente a data anterior a hoje e 
 Na resposta final, confirme a data correta que foi usada.
 Responda sempre em português brasileiro.`,
       tools: [{ functionDeclarations: JARVIS_TOOLS }],
-    }, { apiVersion: 'v1' });
+    });
 
     // Converter histórico para formato Gemini (deve começar com 'user')
     const allMsgs = messages.slice(0, -1).map(m => ({
