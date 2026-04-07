@@ -1272,7 +1272,31 @@ app.post('/api/chat', express.json(), async (req, res) => {
       ? new (require('@google/generative-ai').GoogleGenerativeAI)(process.env.GEMINI_KEY_JARVIS)
       : genAI;
 
-    const jarvisModel = jarvisGenAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+    const JARVIS_MODELS = ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-1.5-flash-8b'];
+
+    async function jarvisGenerate(prompt) {
+      let lastErr;
+      for (const modelName of JARVIS_MODELS) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const m = jarvisGenAI.getGenerativeModel({ model: modelName });
+            const result = await m.generateContent(prompt);
+            return result.response.text();
+          } catch(e) {
+            lastErr = e;
+            const is503 = e.message && e.message.includes('503');
+            const is429 = e.message && e.message.includes('429');
+            if (is503 && attempt === 0) {
+              await new Promise(r => setTimeout(r, 1500));
+              continue;
+            }
+            if (is429 || is503) break; // try next model
+            throw e; // other errors bubble up
+          }
+        }
+      }
+      throw lastErr;
+    }
 
     const lastMsg = messages[messages.length - 1].content;
 
@@ -1298,10 +1322,10 @@ Tags de tarefa: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros
 
 Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"`;
 
-    const parseResult = await jarvisModel.generateContent(parsePrompt);
+    const parseText = await jarvisGenerate(parsePrompt);
     let parsed;
     try {
-      const raw = parseResult.response.text().replace(/```json|```/g, '').trim();
+      const raw = parseText.replace(/```json|```/g, '').trim();
       parsed = JSON.parse(raw);
     } catch(e) {
       parsed = { action: 'conversa', params: {}, resposta_pendente: '' };
@@ -1320,8 +1344,8 @@ Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"
 ${toolResult ? `Resultado da ação executada: ${toolResult}` : ''}
 ${!toolResult ? 'Responda normalmente à mensagem do usuário.' : 'Confirme o que foi feito com base no resultado.'}`;
 
-    const replyResult = await jarvisModel.generateContent(replyPrompt);
-    const reply = replyResult.response.text().trim();
+    const replyText = await jarvisGenerate(replyPrompt);
+    const reply = replyText.trim();
 
     res.json({ reply });
   } catch(e) {
