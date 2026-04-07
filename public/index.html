@@ -327,6 +327,38 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 .auth-btn{width:100%;padding:12px;background:var(--accent);color:#080c14;border:none;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;margin-top:6px;}
 .auth-toggle{font-size:11px;color:var(--muted);text-align:center;margin-top:14px;}
 
+/* ======= COINS ======= */
+.coin-badge{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-display);font-weight:700;font-size:11px;color:#f5a623;}
+.tag-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-family:var(--font-display);font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:5px;white-space:nowrap;vertical-align:middle;margin-left:5px;}
+.tag-badge.comum    {background:rgba(90,106,138,.15); color:#5a6a8a; border:1px solid rgba(90,106,138,.3);}
+.tag-badge.raro     {background:rgba(79,195,247,.12); color:#4fc3f7; border:1px solid rgba(79,195,247,.3);}
+.tag-badge.epico    {background:rgba(168,85,247,.15); color:#a855f7; border:1px solid rgba(168,85,247,.35);}
+.tag-badge.lendario {background:rgba(245,166,35,.15); color:#f5a623; border:1px solid rgba(245,166,35,.4);}
+
+/* ======= LOJA ======= */
+.shop-balance{display:flex;align-items:center;gap:8px;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.25);border-radius:10px;padding:10px 16px;margin-bottom:20px;}
+.shop-balance-icon{font-size:20px;}
+.shop-balance-val{font-family:var(--font-display);font-size:16px;font-weight:700;color:#f5a623;}
+.shop-balance-lab{font-size:10px;color:var(--muted);margin-top:1px;}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.shop-item{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s;}
+.shop-item:hover{border-color:var(--border2);}
+.shop-item.owned{border-color:rgba(34,197,94,.25);}
+.shop-item-top{display:flex;align-items:center;gap:10px;}
+.shop-item-emoji{font-size:24px;line-height:1;}
+.shop-item-name{font-family:var(--font-display);font-size:11px;font-weight:700;flex:1;}
+.shop-item-desc{font-size:10px;color:var(--muted);line-height:1.5;flex:1;}
+.shop-item-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px;}
+.shop-item-cost{font-family:var(--font-display);font-size:12px;font-weight:700;color:#f5a623;}
+.shop-item-btn{padding:5px 12px;border-radius:7px;border:none;cursor:pointer;font-family:var(--font-display);font-size:10px;font-weight:700;transition:all .15s;}
+.shop-item-btn.buy{background:var(--accent);color:#fff;}
+.shop-item-btn.buy:hover{opacity:.85;}
+.shop-item-btn.owned-btn{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25);cursor:default;}
+.shop-item-btn.active-btn{background:rgba(168,85,247,.15);color:var(--accent);border:1px solid rgba(168,85,247,.3);cursor:pointer;}
+.shop-item-btn.active-btn:hover{background:rgba(168,85,247,.25);}
+.coin-popup{position:fixed;top:60px;right:20px;background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.4);color:#f5a623;font-family:var(--font-display);font-size:12px;font-weight:700;padding:8px 16px;border-radius:10px;z-index:500;opacity:0;transform:translateY(-10px);transition:all .3s;pointer-events:none;}
+.coin-popup.show{opacity:1;transform:translateY(0);}
+
 /* ======= SIDEBAR — USER WIDGET ======= */
 .user-widget{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:10px;}
 .user-widget-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
@@ -607,7 +639,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
           <button class="logout-btn" onclick="event.stopPropagation();signOut()" title="Sair">⏻</button>
         </div>
         <div class="user-xp-bar"><div class="user-xp-fill" id="sidebar-xp-bar" style="width:0%"></div></div>
-        <div class="user-xp-text" id="sidebar-xp-text">0 XP</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div class="user-xp-text" id="sidebar-xp-text">0 XP</div>
+          <div class="coin-badge" id="sidebar-coins">🪙 0</div>
+        </div>
       </div>
     </div>
   </div>
@@ -801,6 +836,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
             <div class="profile-stat-val" id="prof-friends">0</div>
             <div class="profile-stat-lab">👥 Amigos</div>
           </div>
+          <div onclick="openShop()" style="cursor:pointer;" title="Abrir loja">
+            <div class="profile-stat-val coin-badge" id="prof-coins" style="font-size:16px;">🪙 0</div>
+            <div class="profile-stat-lab">Coins</div>
+          </div>
         </div>
       </div>
 
@@ -830,9 +869,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 
       <!-- Tags -->
       <div class="profile-section">
-        <div class="profile-section-title">🏷️ Tags</div>
-        <div class="profile-section-sub">Tags desbloqueadas representam quem você é no NexoraFlow</div>
-        <div class="profile-empty">Em breve — suas tags aparecerão aqui! 🎯</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div class="profile-section-title" style="margin-bottom:0;">🏷️ Tags</div>
+          <button class="add-btn" style="font-size:10px;padding:5px 12px;" onclick="openShop()">🛍️ Loja</button>
+        </div>
+        <div class="profile-section-sub">Equipe uma tag para exibir no ranking</div>
+        <div id="prof-tags-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+          <div style="font-size:11px;color:var(--muted);">Você ainda não tem tags. Compre na loja!</div>
+        </div>
       </div>
 
       <!-- Metas Comunitárias -->
@@ -1314,6 +1358,28 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
   </div>
 </div>
 
+<!-- Modal: Loja de Tags -->
+<div class="modal-overlay" id="modal-shop" style="display:none" onclick="if(event.target===this)closeModal('modal-shop')">
+  <div class="modal-box" style="max-width:560px;max-height:85vh;overflow-y:auto;">
+    <div class="modal-title">🛍️ Loja de Tags</div>
+    <div class="shop-balance">
+      <div class="shop-balance-icon">🪙</div>
+      <div>
+        <div class="shop-balance-val" id="shop-coins-val">0</div>
+        <div class="shop-balance-lab">coins disponíveis</div>
+      </div>
+    </div>
+    <div class="shop-grid" id="shop-items-grid">
+      <div style="text-align:center;color:var(--muted);padding:20px;font-size:12px;grid-column:1/-1;">Carregando...</div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="modal-cancel" onclick="closeModal('modal-shop')" style="width:100%;">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="coin-popup" id="coin-popup"></div>
+
 <!-- Modal: Patch Notes -->
 <div class="patch-overlay" id="modal-patch" style="display:none" onclick="if(event.target===this)closePatchNotes()">
   <div class="patch-box">
@@ -1502,6 +1568,7 @@ function startApp() {
   subscribeRealtime();
   checkGoalAlerts();
   checkPatchNotes();
+  callDailyLogin();
   processMyVerificationResults();
   updateVerifyBadge();
 }
@@ -1596,6 +1663,7 @@ function updateSidebarProfile() {
   document.getElementById('sidebar-level').textContent    = `Nível ${level}`;
   document.getElementById('sidebar-xp-bar').style.width   = pct + '%';
   document.getElementById('sidebar-xp-text').textContent  = `${currentProfile.xp || 0} XP`;
+  document.getElementById('sidebar-coins').textContent    = `🪙 ${currentProfile.coins || 0}`;
   // Mobile menu
   setAvatar(document.getElementById('mob-avatar'), currentProfile.avatar_emoji);
   const mobUser = document.getElementById('mob-username');
@@ -2385,6 +2453,165 @@ function checkPatchNotes() {
   }
 }
 
+// ============================================
+// COINS & LOJA
+// ============================================
+const SHOP_ITEMS_CLIENT = [
+  { id: 'tag_economista',  name: 'Economista',         emoji: '💰', desc: 'Mestre das finanças pessoais',  cost: 100,  rarity: 'comum'    },
+  { id: 'tag_fantasma',    name: 'Fantasma',            emoji: '👻', desc: 'Ninguém te vê vir',             cost: 150,  rarity: 'comum'    },
+  { id: 'tag_maratonista', name: 'Maratonista',         emoji: '🏃', desc: 'Nunca para, nunca desiste',     cost: 200,  rarity: 'raro'     },
+  { id: 'tag_mestre',      name: 'Mestre dos Hábitos',  emoji: '🧘', desc: 'Disciplina acima de tudo',      cost: 350,  rarity: 'raro'     },
+  { id: 'tag_campeao',     name: 'Campeão',             emoji: '🏆', desc: 'Chegou ao topo do ranking',     cost: 500,  rarity: 'épico'    },
+  { id: 'tag_lendario',    name: 'Lendário',            emoji: '👑', desc: 'Acima de todos',                cost: 1000, rarity: 'lendário' },
+];
+
+const RARITY_CSS = {
+  'comum':    'comum',
+  'raro':     'raro',
+  'épico':    'epico',
+  'lendário': 'lendario',
+};
+
+function getTagInfo(tagId) {
+  return SHOP_ITEMS_CLIENT.find(i => i.id === tagId) || null;
+}
+
+function tagBadgeHTML(tagId) {
+  const t = getTagInfo(tagId);
+  if (!t) return '';
+  return `<span class="tag-badge ${RARITY_CSS[t.rarity]}">${t.emoji} ${t.name}</span>`;
+}
+
+function showCoinPopup(amount) {
+  const el = document.getElementById('coin-popup');
+  el.textContent = `🪙 +${amount} coins`;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function updateCoinsDisplay(coins) {
+  const c = coins ?? (currentProfile?.coins ?? 0);
+  document.getElementById('sidebar-coins').textContent = `🪙 ${c}`;
+  const profCoins = document.getElementById('prof-coins');
+  if (profCoins) profCoins.textContent = `🪙 ${c}`;
+  const shopVal = document.getElementById('shop-coins-val');
+  if (shopVal) shopVal.textContent = c;
+  if (currentProfile) currentProfile.coins = c;
+}
+
+async function callDailyLogin() {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return;
+    const res = await fetch('/api/daily-login', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${session.access_token}` },
+    });
+    const data = await res.json();
+    if (data.granted) {
+      updateCoinsDisplay(data.coins);
+      setTimeout(() => { showToast('🪙 +5 coins — login diário!'); showCoinPopup(5); }, 1500);
+    } else {
+      updateCoinsDisplay(data.coins);
+    }
+  } catch (e) { console.error('daily-login error:', e); }
+}
+
+async function openShop() {
+  document.getElementById('modal-shop').style.display = 'flex';
+  await loadShop();
+}
+
+async function loadShop() {
+  const grid = document.getElementById('shop-items-grid');
+  grid.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;font-size:12px;grid-column:1/-1;">Carregando...</div>';
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const res = await fetch('/api/shop', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+    const data = await res.json();
+    updateCoinsDisplay(data.coins);
+    grid.innerHTML = data.items.map(item => {
+      const rc = RARITY_CSS[item.rarity] || 'comum';
+      const btn = item.owned
+        ? (item.active
+            ? `<button class="shop-item-btn active-btn" onclick="equipTag(null)">✓ Equipado</button>`
+            : `<button class="shop-item-btn active-btn" onclick="equipTag('${item.id}')">Equipar</button>`)
+        : `<button class="shop-item-btn buy" onclick="buyItem('${item.id}')">Comprar</button>`;
+      return `<div class="shop-item ${item.owned ? 'owned' : ''}" id="shop-card-${item.id}">
+        <div class="shop-item-top">
+          <div class="shop-item-emoji">${item.emoji}</div>
+          <div>
+            <div class="shop-item-name">${item.name}</div>
+            <span class="tag-badge ${rc}" style="margin-left:0;">${item.rarity}</span>
+          </div>
+        </div>
+        <div class="shop-item-desc">${item.desc}</div>
+        <div class="shop-item-footer">
+          <div class="shop-item-cost">${item.owned ? '✓ Comprado' : `🪙 ${item.cost}`}</div>
+          ${btn}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px;grid-column:1/-1;">Erro ao carregar loja.</div>';
+  }
+}
+
+async function buyItem(itemId) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const res = await fetch('/api/shop/buy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify({ itemId }),
+  });
+  const data = await res.json();
+  if (!res.ok) { showToast('❌ ' + (data.error || 'Erro ao comprar.')); return; }
+  updateCoinsDisplay(data.coins);
+  showToast('🎉 Tag comprada e equipada!');
+  await loadShop();
+  renderProfileTags();
+}
+
+async function equipTag(itemId) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const res = await fetch('/api/shop/equip', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify({ itemId }),
+  });
+  if (!res.ok) { showToast('Erro ao equipar.'); return; }
+  if (currentProfile) currentProfile.active_tag = itemId;
+  showToast(itemId ? '✅ Tag equipada!' : 'Tag removida.');
+  await loadShop();
+  renderProfileTags();
+}
+
+async function renderProfileTags() {
+  const grid = document.getElementById('prof-tags-grid');
+  if (!grid) return;
+  const { data: purchases } = await supabaseClient
+    .from('user_purchases').select('item_id, purchased_at').eq('user_id', currentUser.id);
+  if (!purchases || purchases.length === 0) {
+    grid.innerHTML = '<div style="font-size:11px;color:var(--muted);">Você ainda não tem tags. Compre na loja!</div>';
+    return;
+  }
+  const activeTag = currentProfile?.active_tag;
+  grid.innerHTML = purchases.map(p => {
+    const t = getTagInfo(p.item_id);
+    if (!t) return '';
+    const rc = RARITY_CSS[t.rarity] || 'comum';
+    const isActive = p.item_id === activeTag;
+    return `<div onclick="equipTag('${p.item_id}')" title="${isActive ? 'Desequipar' : 'Equipar'}" style="cursor:pointer;display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'};border-radius:10px;padding:8px 12px;transition:border-color .15s;">
+      <span style="font-size:18px;">${t.emoji}</span>
+      <div>
+        <div style="font-family:var(--font-display);font-size:10px;font-weight:700;">${t.name}</div>
+        <span class="tag-badge ${rc}" style="margin-left:0;font-size:8px;">${t.rarity}</span>
+      </div>
+      ${isActive ? '<span style="margin-left:auto;font-size:9px;color:var(--accent);font-family:var(--font-display);font-weight:700;">ATIVO</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
 // MODAIS
 // ============================================
 function closeModal(id) { document.getElementById(id).style.display='none'; }
@@ -2923,7 +3150,7 @@ async function loadProfile() {
 
   const { data: p } = await supabaseClient
     .from('user_profiles')
-    .select('username, avatar_emoji, xp, level, streak, referral_code')
+    .select('username, avatar_emoji, xp, level, streak, referral_code, coins, active_tag')
     .eq('id', currentUser.id)
     .single();
 
@@ -2950,6 +3177,11 @@ async function loadProfile() {
   document.getElementById('prof-xp-bar').style.width   = pct + '%';
   document.getElementById('prof-streak').textContent   = p.streak || 0;
   document.getElementById('prof-code').textContent     = p.referral_code || '——';
+  updateCoinsDisplay(p.coins || 0);
+  if (currentProfile) { currentProfile.coins = p.coins || 0; currentProfile.active_tag = p.active_tag; }
+
+  // Tags
+  renderProfileTags();
 
   // Conta amigos
   const { count } = await supabaseClient
@@ -3440,7 +3672,7 @@ async function loadRanking() {
       <div class="rank-pos">${medal}</div>
       ${avatarHTML(p.avatar_emoji, 36, 10)}
       <div class="rank-info">
-        <div class="rank-name">${p.username}${isMe ? ' <span class="rank-you">você</span>' : ''}</div>
+        <div class="rank-name">${p.username}${isMe ? ' <span class="rank-you">você</span>' : ''}${p.active_tag ? tagBadgeHTML(p.active_tag) : ''}</div>
         <div class="rank-xp-bar"><div class="rank-xp-fill" style="width:${pct}%"></div></div>
         <div class="rank-xp-text">${p.xp || 0} XP</div>
       </div>

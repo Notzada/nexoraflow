@@ -15,7 +15,11 @@
       "Bash(curl -s http://localhost:3000/health)",
       "Bash(npm install:*)",
       "Skill(claude-api)",
-      "Skill(claude-api:*)"
+      "Skill(claude-api:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

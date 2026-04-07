@@ -18,6 +18,7 @@ const { addXP, updateStreak }              = require('./services/xpService');
 const { addWeeklyXP, getWeeklyRanking, getFriendRanking } = require('./services/rankingService');
 const { ensureReferralCode, addFriend, getFriends }       = require('./services/friendService');
 const { checkAndGrantAchievements }                       = require('./services/achievementService');
+const { addCoins, spendCoins, getHabitStreak, SHOP_ITEMS } = require('./services/coinService');
 
 const app = express();
 app.use(express.json());
@@ -49,14 +50,12 @@ async function notifyAchievements(chatId, userId) {
     const newOnes = await checkAndGrantAchievements(
       supabaseAdmin,
       userId,
-      (uid, amount, reason) => {
-        addXP(supabaseAdmin, uid, amount, reason);
-        addWeeklyXP(supabaseAdmin, uid, amount);
-      }
+      (uid, amount, reason) => { addXP(supabaseAdmin, uid, amount, reason); addWeeklyXP(supabaseAdmin, uid, amount); },
+      (uid, amount, reason) => addCoins(supabaseAdmin, uid, amount, reason)
     );
     for (const ach of newOnes) {
       await sendTelegram(chatId,
-        `🏆 *CONQUISTA DESBLOQUEADA!*\n\n*${ach.name}*\n_${ach.desc}_\n\n⭐ +${ach.xp} XP`
+        `🏆 *CONQUISTA DESBLOQUEADA!*\n\n*${ach.name}*\n_${ach.desc}_\n\n⭐ +${ach.xp} XP${ach.coins ? ` · 🪙 +${ach.coins} coins` : ''}`
       );
     }
   } catch (e) {
@@ -72,14 +71,25 @@ async function grantXP(userId, amount, reason) {
   ]);
   await addWeeklyXP(supabaseAdmin, userId, amount);
 
+  // Coins por level up
+  let levelUpCoins = 0;
+  if (xpResult?.levelUp) {
+    levelUpCoins = xpResult.level * 15;
+    await addCoins(supabaseAdmin, userId, levelUpCoins, `Level up: Nível ${xpResult.level}`);
+  }
+
   let bonusText = '';
   if (streakResult.bonus > 0) {
     await addXP(supabaseAdmin, userId, streakResult.bonus, `Streak ${streakResult.bonusReason}`);
     await addWeeklyXP(supabaseAdmin, userId, streakResult.bonus);
+    // Coins por streak milestone
+    if (streakResult.streak === 7)  await addCoins(supabaseAdmin, userId, 50,  'Streak de 7 dias');
+    if (streakResult.streak === 30) await addCoins(supabaseAdmin, userId, 200, 'Streak de 30 dias');
     bonusText = `\n🔥 *${streakResult.bonusReason}!* +${streakResult.bonus} XP bônus!`;
   }
 
-  const levelUpText = xpResult?.levelUp ? `\n🎉 *LEVEL UP! Você é agora Nível ${xpResult.level}!*` : '';
+  const levelUpText = xpResult?.levelUp
+    ? `\n🎉 *LEVEL UP! Você é agora Nível ${xpResult.level}!*\n🪙 +${levelUpCoins} coins!` : '';
   const streakText  = streakResult.streak > 1 ? `\n🔥 Sequência: *${streakResult.streak} dias*` : '';
 
   return `\n⭐ *+${amount} XP* (${xpResult?.totalXp || 0} total · Nível ${xpResult?.level || 1})${streakText}${bonusText}${levelUpText}`;
@@ -1041,10 +1051,12 @@ app.post('/api/event/finalize', express.json(), async (req, res) => {
     const allDone = subs && subs.length >= 2 && subs.every(s => s.status === 'approved');
 
     if (allDone) {
-      const { data: event } = await supabaseAdmin.from('events').select('xp_reward').eq('id', verif.ref_id).single();
+      const { data: event } = await supabaseAdmin.from('events').select('xp_reward, title').eq('id', verif.ref_id).single();
       if (event) {
-        await addXP(supabaseAdmin, verif.user_id, event.xp_reward, `Evento: ${verif.ref_name}`);
+        await addXP(supabaseAdmin, verif.user_id, event.xp_reward, `Evento: ${event.title}`);
         await addWeeklyXP(supabaseAdmin, verif.user_id, event.xp_reward);
+        // Coins por evento completo
+        await addCoins(supabaseAdmin, verif.user_id, 100, `Evento concluído: ${event.title}`);
       }
     } else {
       // XP parcial por etapa aprovada
@@ -1058,6 +1070,94 @@ app.post('/api/event/finalize', express.json(), async (req, res) => {
       .eq('event_id', verif.ref_id).eq('user_id', verif.user_id).eq('step', step);
   }
 
+  res.json({ ok: true });
+});
+
+// ============================================
+// API — COINS & LOJA
+// ============================================
+
+// Login diário: +5 coins (uma vez por dia)
+app.post('/api/daily-login', express.json(), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const today = new Date().toISOString().split('T')[0];
+  const { data: profile } = await supabaseAdmin
+    .from('user_profiles').select('coins, last_coin_login').eq('id', user.id).single();
+  if (!profile) return res.status(404).json({ error: 'Perfil não encontrado.' });
+
+  if (profile.last_coin_login === today) return res.json({ granted: false, coins: profile.coins || 0 });
+
+  await supabaseAdmin.from('user_profiles').update({ last_coin_login: today }).eq('id', user.id);
+  const newCoins = await addCoins(supabaseAdmin, user.id, 5, 'Login diário');
+  res.json({ granted: true, coins: newCoins });
+});
+
+// Listar itens da loja com status de compra do usuário
+app.get('/api/shop', async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { data: purchases } = await supabaseAdmin
+    .from('user_purchases').select('item_id').eq('user_id', user.id);
+  const { data: profile } = await supabaseAdmin
+    .from('user_profiles').select('coins, active_tag').eq('id', user.id).single();
+
+  const ownedIds = new Set((purchases || []).map(p => p.item_id));
+  const items = SHOP_ITEMS.map(item => ({
+    ...item,
+    owned: ownedIds.has(item.id),
+    active: profile?.active_tag === item.id,
+  }));
+
+  res.json({ items, coins: profile?.coins || 0 });
+});
+
+// Comprar item da loja
+app.post('/api/shop/buy', express.json(), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { itemId } = req.body;
+  const item = SHOP_ITEMS.find(i => i.id === itemId);
+  if (!item) return res.status(400).json({ error: 'Item não encontrado.' });
+
+  // Verificar se já possui
+  const { data: existing } = await supabaseAdmin
+    .from('user_purchases').select('id').eq('user_id', user.id).eq('item_id', itemId).maybeSingle();
+  if (existing) return res.status(400).json({ error: 'Item já comprado.' });
+
+  const result = await spendCoins(supabaseAdmin, user.id, item.cost, `Compra: ${item.name}`);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+
+  await supabaseAdmin.from('user_purchases').insert({ user_id: user.id, item_id: itemId });
+  // Equipa automaticamente a tag recém-comprada
+  await supabaseAdmin.from('user_profiles').update({ active_tag: itemId }).eq('id', user.id);
+
+  res.json({ ok: true, coins: result.newCoins });
+});
+
+// Equipar/desequipar tag
+app.post('/api/shop/equip', express.json(), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { itemId } = req.body; // null para desequipar
+  if (itemId) {
+    const { data: owned } = await supabaseAdmin
+      .from('user_purchases').select('id').eq('user_id', user.id).eq('item_id', itemId).maybeSingle();
+    if (!owned) return res.status(400).json({ error: 'Item não comprado.' });
+  }
+  await supabaseAdmin.from('user_profiles').update({ active_tag: itemId || null }).eq('id', user.id);
   res.json({ ok: true });
 });
 
@@ -1197,7 +1297,14 @@ async function executarFerramenta(tool_name, tool_input, userId, clientNow, tzOf
       if (existing) return `Hábito "${match.name}" já foi marcado hoje!`;
       await supabaseAdmin.from('habit_logs').insert({ habit_id: match.id, user_id: userId, done_at: today });
       await addXP(supabaseAdmin, userId, 10, `Hábito: ${match.name}`);
-      return `Hábito "${match.name}" marcado como concluído! +10 XP`;
+      // Coins por streak de 7 dias no hábito específico
+      const hStreak = await getHabitStreak(supabaseAdmin, match.id, userId);
+      let streakBonus = '';
+      if (hStreak > 0 && hStreak % 7 === 0) {
+        await addCoins(supabaseAdmin, userId, 30, `Hábito "${match.name}" — ${hStreak} dias seguidos`);
+        streakBonus = ` 🪙 +30 coins (${hStreak} dias seguidos!)`;
+      }
+      return `Hábito "${match.name}" marcado como concluído! +10 XP${streakBonus}`;
     }
 
     if (tool_name === 'criar_habito') {
