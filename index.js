@@ -1328,6 +1328,8 @@ Schemas de params:
 Regras:
 - Se houver múltiplos itens (ex: "gastei 30 em comida e 20 no uber"), retorne um item para cada
 - Se usuário confirmar algo proposto antes (ex: "sim", "pode"), execute a ação pendente
+- Quando múltiplos gastos são listados juntos e apenas o primeiro tem data, aplique a MESMA data a todos os outros (ex: "gastei X ontem, Y e Z" → todos ontem)
+- Só use data diferente se o usuário explicitamente indicar (ex: "gastei X ontem e Y hoje")
 - Categorias de gasto: Alimentação, Transporte, Saúde, Lazer, Moradia, Educação, Roupas, Outros
 - Tags de tarefa: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros
 
