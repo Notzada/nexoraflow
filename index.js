@@ -1231,6 +1231,19 @@ async function executarFerramenta(tool_name, tool_input, userId, clientNow, tzOf
       return `Hábito "${match.name}" marcado como concluído! +10 XP`;
     }
 
+    if (tool_name === 'criar_habito') {
+      const { habit_name, icon, color } = tool_input;
+      const { error } = await supabaseAdmin.from('habits').insert({
+        user_id: userId,
+        name: habit_name,
+        icon: icon || '⭐',
+        color: color || '#9b72f5',
+        frequency: 'daily',
+      });
+      if (error) return `Erro ao criar hábito: ${error.message}`;
+      return `Hábito "${habit_name}" criado com sucesso! Agora você já pode marcá-lo.`;
+    }
+
     if (tool_name === 'criar_tarefa') {
       const { text, tag, due_date, due_time } = tool_input;
       const { error } = await supabaseAdmin.from('tasks').insert({
@@ -1324,18 +1337,26 @@ app.post('/api/chat', express.json(), async (req, res) => {
 
     const lastMsg = messages[messages.length - 1].content;
 
+    // Inclui as últimas mensagens para contexto de confirmações ("Sim", "pode criar", etc.)
+    const recentHistory = messages.slice(-6, -1)
+      .map(m => `${m.role === 'user' ? 'Usuário' : 'JARVIS'}: ${m.content}`)
+      .join('\n');
+
     // Usa Gemini para parsear intenção como JSON (sem function calling)
     const parsePrompt = `Você é o JARVIS do NexoraFlow. Hoje é ${today} (${todayISO}). Ontem foi ${yesterday}.
 
-Analise a mensagem e retorne APENAS um array JSON válido (sem markdown, sem explicação).
-Se houver múltiplos gastos/tarefas/hábitos na mensagem, retorne um item para cada um.
+Analise a mensagem do usuário considerando o contexto da conversa recente.
+Se o usuário confirmar algo que o JARVIS perguntou (ex: "sim", "pode", "vai", "cria"), execute a ação que foi proposta.
+Retorne APENAS um array JSON válido (sem markdown, sem explicação).
+Se houver múltiplos gastos/tarefas/hábitos, retorne um item para cada um.
 
 [
   {
-    "action": "registrar_gasto" | "marcar_habito" | "criar_tarefa" | "consultar" | "conversa",
+    "action": "registrar_gasto" | "marcar_habito" | "criar_habito" | "criar_tarefa" | "consultar" | "conversa",
     "params": {
-      // registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD", "time": "HH:MM" (opcional, só se mencionado) }
+      // registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD", "time": "HH:MM" (opcional) }
       // marcar_habito:   { "habit_name": string }
+      // criar_habito:    { "habit_name": string, "icon": emoji, "color": "#hexcor" }
       // criar_tarefa:    { "text": string, "tag": string, "due_date": "YYYY-MM-DD", "due_time": "HH:MM" }
       // consultar:       { "tipo": "gastos" | "habitos" | "tarefas" | "perfil" }
       // conversa:        {}
@@ -1344,14 +1365,14 @@ Se houver múltiplos gastos/tarefas/hábitos na mensagem, retorne um item para c
 ]
 
 Exemplos:
-- "gastei 30 em comida e 20 no uber" → dois itens: registrar_gasto para cada
-- "marcar corrida e criar tarefa comprar leite" → dois itens
-- "quanto gastei esse mês?" → um item: consultar
+- "gastei 30 em comida e 20 no uber" → dois itens registrar_gasto
+- "sim" (após JARVIS perguntar se cria hábito "academia") → criar_habito com habit_name "academia"
+- "pode criar" (após JARVIS perguntar algo) → executa a ação que foi proposta
 
 Categorias de gasto: Alimentação, Transporte, Saúde, Lazer, Moradia, Educação, Roupas, Outros
 Tags de tarefa: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros
 
-Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"`;
+${recentHistory ? `Conversa recente:\n${recentHistory}\n` : ''}Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"`;
 
     const parseText = await jarvisGenerate(parsePrompt);
     let actions;
