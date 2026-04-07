@@ -574,7 +574,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
     <div class="page active" id="page-dashboard">
       <div class="page-header">
         <div><div class="page-title">Dashboard</div><div class="page-subtitle" id="dash-date"></div></div>
-        <button class="add-btn" onclick="showPage('expenses',document.querySelector(\'.nav-item:nth-child(8)\'))">+ Gasto</button>
+        <button class="add-btn" onclick="showPage('expenses');addExpensePrompt()">+ Gasto</button>
       </div>
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-label">Gastos do Mês</div><div class="stat-value neg" id="stat-total">—</div><div class="stat-bar"><div class="stat-bar-fill" id="stat-bar-exp" style="background:var(--red)"></div></div></div>
