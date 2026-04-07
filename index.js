@@ -1267,7 +1267,7 @@ app.post('/api/chat', express.json(), async (req, res) => {
     const today = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
     const jarvisModel = genAI.getGenerativeModel({
-      model: 'gemini-flash-latest',
+      model: 'gemini-1.5-flash-latest',
       systemInstruction: `Você é o JARVIS, assistente pessoal inteligente do NexoraFlow. Hoje é ${today}.
 Você ajuda o usuário a registrar gastos, marcar hábitos, criar tarefas e consultar seus dados.
 Seja conciso, amigável e use emojis moderadamente. Sempre confirme o que foi feito.
