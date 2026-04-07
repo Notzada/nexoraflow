@@ -1183,7 +1183,8 @@ async function executarFerramenta(tool_name, tool_input, userId) {
     if (tool_name === 'registrar_gasto') {
       const { category, description } = tool_input;
       const amount = parseFloat(tool_input.amount);
-      const created_at = tool_input.date ? new Date(tool_input.date).toISOString() : new Date().toISOString();
+      // Usa meio-dia para evitar erro de fuso (meia-noite UTC = dia anterior no Brasil)
+      const created_at = tool_input.date ? new Date(tool_input.date + 'T12:00:00Z').toISOString() : new Date().toISOString();
       const { data: inserted, error } = await supabaseAdmin.from('expenses').insert({
         user_id: userId, amount, category, description,
         source: 'jarvis', installments: 1, installment_current: 1, created_at,
