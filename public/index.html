@@ -1607,7 +1607,7 @@ function expenseHTML(e, showDel=false) {
     ${amountHTML}
     ${showDel?`<div class="exp-actions">
       <button class="edit-cat-btn" title="Editar categoria" onclick="openEditCategory('${e.id}','${descEsc}',${parseFloat(e.amount).toFixed(2)},'${e.category}')">✎</button>
-      <button class="del-btn" title="Excluir" onclick="deleteExpense('${e.id}','${group}',${inst})">✕</button>
+      <button class="del-btn" title="Excluir" onclick="deleteExpense('${e.id}','${group}',${inst},'${e.source}')">✕</button>
     </div>`:''}
   </div>`;
 }
@@ -2215,16 +2215,19 @@ async function deleteGoal(id, name) {
   loadGoals();
 }
 
-async function deleteExpense(id, group='', installments=1) {
-  const isInstallment = installments > 1 && group;
-  const msg = isInstallment
-    ? `Este gasto é parcelado (${installments}x).\nRemover TODAS as ${installments} parcelas?`
-    : 'Remover este gasto?';
+async function deleteExpense(id, group='', installments=1, source='') {
+  const isFixed = source === 'fixed';
+  const isInstallment = !isFixed && installments > 1 && group;
+  const msg = isFixed
+    ? `Este é um gasto fixo com ${installments} meses.\nRemover TODOS os ${installments} lançamentos?`
+    : isInstallment
+      ? `Este gasto é parcelado (${installments}x).\nRemover TODAS as ${installments} parcelas?`
+      : 'Remover este gasto?';
   if (!confirm(msg)) return;
 
-  if (isInstallment) {
+  if (isFixed || isInstallment) {
     await supabaseClient.from('expenses').delete().eq('installment_group', group);
-    showToast(`🗑️ ${installments} parcelas removidas.`);
+    showToast(isFixed ? `🗑️ Gasto fixo removido (${installments} meses).` : `🗑️ ${installments} parcelas removidas.`);
   } else {
     await supabaseClient.from('expenses').delete().eq('id', id);
     showToast('🗑️ Gasto removido.');
