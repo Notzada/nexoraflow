@@ -181,6 +181,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 .habit-del-btn{width:22px;height:22px;border-radius:5px;border:1px solid rgba(224,92,92,.25);background:transparent;color:#6b6f78;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;flex-shrink:0;transition:all .15s;line-height:1;}
 .habit-del-btn:hover{background:rgba(224,92,92,.15);color:var(--red);border-color:var(--red);}
 
+/* ======= PATCH NOTES ======= */
+.patch-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;}
+.patch-box{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:32px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;}
+.patch-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.patch-version{font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:linear-gradient(135deg,var(--accent),#4fc3f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.patch-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:0 0 0 12px;}
+.patch-close:hover{color:var(--text);}
+.patch-title{font-family:var(--font-display);font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px;}
+.patch-date{font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:24px;}
+.patch-section{margin-bottom:20px;}
+.patch-section-title{font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.patch-section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.patch-item{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;}
+.patch-icon{font-size:18px;flex-shrink:0;line-height:1.2;}
+.patch-text{font-size:12px;color:var(--text);line-height:1.6;}
+.patch-text strong{color:var(--accent);font-weight:700;}
+.patch-text span{color:var(--muted);font-size:11px;}
+.patch-btn{width:100%;margin-top:24px;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:10px;font-family:var(--font-display);font-weight:700;font-size:12px;cursor:pointer;letter-spacing:1px;}
+.patch-btn:hover{opacity:.9;}
+.patch-badge{display:inline-block;font-size:9px;font-family:var(--font-display);font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:4px;margin-left:6px;vertical-align:middle;}
+.patch-badge.new{background:rgba(168,85,247,.15);color:var(--accent);border:1px solid rgba(168,85,247,.3);}
+.patch-badge.fix{background:rgba(79,195,247,.12);color:#4fc3f7;border:1px solid rgba(79,195,247,.25);}
+
 /* ======= MODAL ======= */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;}
 .modal-box{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:28px;max-width:420px;width:100%;}
@@ -548,6 +571,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.5 3.5L8 10l-3 1.5.5-3.5L3 5.5 6.5 5z"/></svg>Eventos
     </div>
     <div class="nav-section">Sistema</div>
+    <div class="nav-item" onclick="openPatchNotes()" id="nav-patch" style="position:relative;">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H3a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V3a1 1 0 00-1-1z"/><path d="M5 6h6M5 9h4"/></svg>Novidades
+      <span id="patch-dot" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);"></span>
+    </div>
     <div class="nav-item" onclick="showPage('settings',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M13.3 10a1.2 1.2 0 00.2 1.3l.04.04a1.45 1.45 0 11-2.05 2.05l-.04-.04a1.2 1.2 0 00-1.3-.2 1.2 1.2 0 00-.73 1.1v.12a1.45 1.45 0 11-2.9 0v-.06a1.2 1.2 0 00-.78-1.1 1.2 1.2 0 00-1.3.2l-.04.04a1.45 1.45 0 11-2.05-2.05l.04-.04a1.2 1.2 0 00.2-1.3 1.2 1.2 0 00-1.1-.73H1.45a1.45 1.45 0 010-2.9h.06a1.2 1.2 0 001.1-.78 1.2 1.2 0 00-.2-1.3l-.04-.04A1.45 1.45 0 114.42 2.1l.04.04a1.2 1.2 0 001.3.2h.06a1.2 1.2 0 00.73-1.1V1.12a1.45 1.45 0 012.9 0v.06a1.2 1.2 0 00.73 1.1 1.2 1.2 0 001.3-.2l.04-.04a1.45 1.45 0 112.05 2.05l-.04.04a1.2 1.2 0 00-.2 1.3v.06a1.2 1.2 0 001.1.73h.12a1.45 1.45 0 010 2.9h-.06a1.2 1.2 0 00-1.1.73z"/></svg>Configurações
     </div>
@@ -1202,6 +1229,76 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
   </div>
 </div>
 
+<!-- Modal: Patch Notes -->
+<div class="patch-overlay" id="modal-patch" style="display:none" onclick="if(event.target===this)closePatchNotes()">
+  <div class="patch-box">
+    <div class="patch-header">
+      <span class="patch-version">v2.0 · Patch Notes</span>
+      <button class="patch-close" onclick="closePatchNotes()">×</button>
+    </div>
+    <div class="patch-title">O que há de novo no NexoraFlow</div>
+    <div class="patch-date">Abril 2026</div>
+
+    <div class="patch-section">
+      <div class="patch-section-title">NEXO — Assistente IA</div>
+      <div class="patch-item">
+        <span class="patch-icon">🤖</span>
+        <div class="patch-text"><strong>NEXO</strong> agora é o nome do seu assistente! Fale com ele em linguagem natural para registrar gastos, marcar hábitos e criar tarefas. <span>Anteriormente chamado de JARVIS.</span></div>
+      </div>
+      <div class="patch-item">
+        <span class="patch-icon">🧾</span>
+        <div class="patch-text"><strong>Múltiplos lançamentos de uma vez</strong> — diga "gastei 50 no mercado e 30 no posto" e o NEXO registra tudo de uma vez.</div>
+      </div>
+      <div class="patch-item">
+        <span class="patch-icon">🕐</span>
+        <div class="patch-text"><strong>Data e hora precisas</strong> — o NEXO usa seu horário local e, se você mencionar uma data específica, ele respeita exatamente o que você disser.</div>
+      </div>
+    </div>
+
+    <div class="patch-section">
+      <div class="patch-section-title">Finanças <span class="patch-badge new">NOVO</span></div>
+      <div class="patch-item">
+        <span class="patch-icon">💰</span>
+        <div class="patch-text"><strong>Registre Receitas</strong> — além de gastos, agora você pode registrar entradas como salário, freelance ou reembolso. A aba foi renomeada de "Gastos" para <strong>Finanças</strong>.</div>
+      </div>
+      <div class="patch-item">
+        <span class="patch-icon">📌</span>
+        <div class="patch-text"><strong>Gasto Fixo</strong> — marque um gasto como fixo e ele aparece com o badge <em style="color:#00c896;font-style:normal;">FIXO</em> em vez de ser confundido com parcelas.</div>
+      </div>
+      <div class="patch-item">
+        <span class="patch-icon">📊</span>
+        <div class="patch-text"><strong>Gráficos corrigidos</strong> — receitas não entram mais nas estatísticas de despesas do Dashboard. <span class="patch-badge fix">FIX</span></div>
+      </div>
+    </div>
+
+    <div class="patch-section">
+      <div class="patch-section-title">Hábitos</div>
+      <div class="patch-item">
+        <span class="patch-icon">✏️</span>
+        <div class="patch-text"><strong>Edite hábitos</strong> — agora você pode mudar o nome e o emoji de qualquer hábito diretamente na lista.</div>
+      </div>
+      <div class="patch-item">
+        <span class="patch-icon">🔲</span>
+        <div class="patch-text"><strong>Quadrados maiores</strong> — os dias da semana nos hábitos ficaram maiores e mais fáceis de visualizar.</div>
+      </div>
+    </div>
+
+    <div class="patch-section">
+      <div class="patch-section-title">Social</div>
+      <div class="patch-item">
+        <span class="patch-icon">🏆</span>
+        <div class="patch-text"><strong>Ranking restrito a amigos</strong> — o placar agora mostra apenas quem você adicionou como amigo, sem estranhos.</div>
+      </div>
+      <div class="patch-item">
+        <span class="patch-icon">👥</span>
+        <div class="patch-text"><strong>Remover amigos</strong> — adicionou sem querer? Agora é possível remover amigos direto da lista.</div>
+      </div>
+    </div>
+
+    <button class="patch-btn" onclick="closePatchNotes()">Entendido, vamos nessa! 🚀</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1319,6 +1416,7 @@ function startApp() {
   loadAll();
   subscribeRealtime();
   checkGoalAlerts();
+  checkPatchNotes();
   processMyVerificationResults();
   updateVerifyBadge();
 }
@@ -2075,6 +2173,26 @@ async function toggleTask(id, newVal, el) {
 }
 
 // ============================================
+// PATCH NOTES
+// ============================================
+const PATCH_VERSION = 'v2';
+function openPatchNotes() {
+  document.getElementById('modal-patch').style.display='flex';
+  localStorage.setItem('nexora_patch_seen', PATCH_VERSION);
+  document.getElementById('patch-dot').style.display='none';
+}
+function closePatchNotes() {
+  document.getElementById('modal-patch').style.display='none';
+}
+function checkPatchNotes() {
+  const seen = localStorage.getItem('nexora_patch_seen');
+  if (seen !== PATCH_VERSION) {
+    document.getElementById('patch-dot').style.display='block';
+    // auto-show after a short delay so the app loads first
+    setTimeout(openPatchNotes, 1200);
+  }
+}
+
 // MODAIS
 // ============================================
 function closeModal(id) { document.getElementById(id).style.display='none'; }
