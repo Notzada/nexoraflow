@@ -1303,19 +1303,26 @@ app.post('/api/chat', express.json(), async (req, res) => {
     // Usa Gemini para parsear intenção como JSON (sem function calling)
     const parsePrompt = `Você é o JARVIS do NexoraFlow. Hoje é ${today} (${todayISO}). Ontem foi ${yesterday}.
 
-Analise a mensagem e retorne APENAS um JSON válido (sem markdown, sem explicação):
+Analise a mensagem e retorne APENAS um array JSON válido (sem markdown, sem explicação).
+Se houver múltiplos gastos/tarefas/hábitos na mensagem, retorne um item para cada um.
 
-{
-  "action": "registrar_gasto" | "marcar_habito" | "criar_tarefa" | "consultar" | "conversa",
-  "params": {
-    // registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD" }
-    // marcar_habito:   { "habit_name": string }
-    // criar_tarefa:    { "text": string, "tag": string, "due_date": "YYYY-MM-DD", "due_time": "HH:MM" }
-    // consultar:       { "tipo": "gastos" | "habitos" | "tarefas" | "perfil" }
-    // conversa:        {}
-  },
-  "resposta_pendente": "mensagem curta confirmando o que vai fazer (antes de executar)"
-}
+[
+  {
+    "action": "registrar_gasto" | "marcar_habito" | "criar_tarefa" | "consultar" | "conversa",
+    "params": {
+      // registrar_gasto: { "amount": number, "category": string, "description": string, "date": "YYYY-MM-DD" }
+      // marcar_habito:   { "habit_name": string }
+      // criar_tarefa:    { "text": string, "tag": string, "due_date": "YYYY-MM-DD", "due_time": "HH:MM" }
+      // consultar:       { "tipo": "gastos" | "habitos" | "tarefas" | "perfil" }
+      // conversa:        {}
+    }
+  }
+]
+
+Exemplos:
+- "gastei 30 em comida e 20 no uber" → dois itens: registrar_gasto para cada
+- "marcar corrida e criar tarefa comprar leite" → dois itens
+- "quanto gastei esse mês?" → um item: consultar
 
 Categorias de gasto: Alimentação, Transporte, Saúde, Lazer, Moradia, Educação, Roupas, Outros
 Tags de tarefa: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros
@@ -1323,18 +1330,23 @@ Tags de tarefa: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros
 Mensagem do usuário: "${lastMsg.replace(/"/g, "'")}"`;
 
     const parseText = await jarvisGenerate(parsePrompt);
-    let parsed;
+    let actions;
     try {
       const raw = parseText.replace(/```json|```/g, '').trim();
-      parsed = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      actions = Array.isArray(parsed) ? parsed : [parsed];
     } catch(e) {
-      parsed = { action: 'conversa', params: {}, resposta_pendente: '' };
+      actions = [{ action: 'conversa', params: {} }];
     }
 
-    let toolResult = '';
-    if (parsed.action !== 'conversa') {
-      toolResult = await executarFerramenta(parsed.action, parsed.params, user.id);
+    const toolResults = [];
+    for (const item of actions) {
+      if (item.action && item.action !== 'conversa') {
+        const r = await executarFerramenta(item.action, item.params, user.id);
+        if (r) toolResults.push(r);
+      }
     }
+    const toolResult = toolResults.join('\n');
 
     // Segunda chamada: gera resposta final natural
     const replyPrompt = `Você é o JARVIS do NexoraFlow. Hoje é ${today}.
