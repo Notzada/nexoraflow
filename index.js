@@ -964,6 +964,44 @@ app.post('/api/avatar', upload.single('file'), async (req, res) => {
 });
 
 // ============================================
+// IA — Análise automática de foto de evento
+// ============================================
+async function analyzePhotoWithAI(photoUrl, eventTitle, stepLabel) {
+  try {
+    const prompt = `Você é um verificador automático de provas para o desafio "${eventTitle}".
+A etapa a verificar é: "${stepLabel}".
+Analise a imagem e determine se ela é uma prova válida e real desta etapa.
+Responda APENAS neste formato: APROVADO|motivo breve  ou  REJEITADO|motivo breve
+Seja objetivo e rigoroso. Não aprove fotos irrelevantes ou vazias.`;
+
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.GROQ_KEY}` },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        messages: [{ role: 'user', content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: photoUrl } },
+        ]}],
+        max_tokens: 80,
+        temperature: 0.1,
+      }),
+    });
+
+    if (!resp.ok) throw new Error(`Groq vision ${resp.status}`);
+    const data = await resp.json();
+    const text = (data.choices?.[0]?.message?.content || '').trim();
+    const [decision, ...rest] = text.split('|');
+    const approved = decision.trim().toUpperCase().startsWith('APROV');
+    return { approved, reason: rest.join('|').trim() || decision.trim() };
+  } catch (e) {
+    console.error('analyzePhotoWithAI error:', e.message);
+    // Em caso de erro da IA, aprova por benefício da dúvida
+    return { approved: true, reason: 'Análise automática — aprovado por padrão.' };
+  }
+}
+
+// ============================================
 // API — EVENTOS: submeter prova por etapa
 // ============================================
 app.post('/api/event/submit', upload.single('file'), async (req, res) => {
@@ -1000,6 +1038,7 @@ app.post('/api/event/submit', upload.single('file'), async (req, res) => {
   // Cancela verificações anteriores desse step (reenvio após rejeição)
   const stepLabel = step == 1 ? 'Garrafinha CHEIA' : 'Garrafinha VAZIA';
   const fullRefName = `${event.title} — ${stepLabel}`;
+  const photoUrlFinal = publicUrl + '?t=' + Date.now();
   try {
     await supabaseAdmin.from('verifications')
       .update({ status: 'done' })
@@ -1007,15 +1046,57 @@ app.post('/api/event/submit', upload.single('file'), async (req, res) => {
       .eq('ref_name', fullRefName).neq('status', 'done');
   } catch(_) {}
 
-  // Cria nova verificação para amigos aprovarem
+  // Verifica se o usuário tem amigos
+  const { count: friendCount } = await supabaseAdmin
+    .from('friends').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
+
   const verificationId = require('crypto').randomUUID();
+
+  if (!friendCount || friendCount === 0) {
+    // Sem amigos: IA analisa a foto automaticamente
+    const aiResult = await analyzePhotoWithAI(photoUrlFinal, event.title, stepLabel);
+    const autoStatus = aiResult.approved ? 'approved' : 'rejected';
+
+    await supabaseAdmin.from('verifications').insert({
+      id: verificationId, user_id: user.id, type: 'event', ref_id: eventId,
+      ref_name: fullRefName, photo_url: photoUrlFinal,
+      xp_amount: Math.round(event.xp_reward / 2), status: autoStatus,
+    });
+
+    if (aiResult.approved) {
+      await supabaseAdmin.from('event_submissions')
+        .update({ status: 'approved' })
+        .eq('event_id', eventId).eq('user_id', user.id).eq('step', parseInt(step));
+
+      // Verifica se todas etapas foram aprovadas
+      const { data: subs } = await supabaseAdmin.from('event_submissions')
+        .select('step,status').eq('event_id', eventId).eq('user_id', user.id);
+      const allDone = subs && subs.length >= 2 && subs.every(s => s.status === 'approved');
+      if (allDone) {
+        await addXP(supabaseAdmin, user.id, event.xp_reward, `Evento: ${event.title}`);
+        await addWeeklyXP(supabaseAdmin, user.id, event.xp_reward);
+        await addCoins(supabaseAdmin, user.id, 100, `Evento concluído: ${event.title}`);
+      } else {
+        await addXP(supabaseAdmin, user.id, Math.round(event.xp_reward / 2), fullRefName);
+        await addWeeklyXP(supabaseAdmin, user.id, Math.round(event.xp_reward / 2));
+      }
+    } else {
+      await supabaseAdmin.from('event_submissions')
+        .update({ status: 'rejected' })
+        .eq('event_id', eventId).eq('user_id', user.id).eq('step', parseInt(step));
+    }
+
+    return res.json({ ok: true, verificationId, aiReviewed: true, aiApproved: aiResult.approved, aiReason: aiResult.reason });
+  }
+
+  // Tem amigos: cria verificação pendente para eles aprovarem
   await supabaseAdmin.from('verifications').insert({
     id: verificationId,
     user_id: user.id,
     type: 'event',
     ref_id: eventId,
     ref_name: fullRefName,
-    photo_url: publicUrl + '?t=' + Date.now(),
+    photo_url: photoUrlFinal,
     xp_amount: Math.round(event.xp_reward / 2),
     status: 'pending',
   });

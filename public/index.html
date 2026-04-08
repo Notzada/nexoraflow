@@ -1176,7 +1176,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
       <img class="proof-preview-img" id="proof-preview-img">
     </label>
     <input type="file" id="proof-file-input" accept="image/*" capture="environment" style="display:none" onchange="previewProofPhoto(this)">
-    <div style="font-size:10px;color:var(--muted);margin-top:8px;margin-bottom:16px">A foto será visível para seus amigos aprovarem. Se a maioria rejeitar, o XP será retirado.</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:8px;margin-bottom:16px">A foto será enviada para seus amigos aprovarem. Sem amigos? Uma IA analisa automaticamente.</div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeModal('modal-proof')">Cancelar</button>
       <button class="modal-confirm" id="proof-submit-btn" onclick="submitProof()">Confirmar →</button>
@@ -3644,8 +3644,18 @@ async function submitEventProof() {
 
   if (!res.ok) { showToast('Erro ao enviar prova.'); return; }
 
-  showToast('📸 Prova enviada! Aguardando aprovação dos amigos.');
+  const data = await res.json();
   closeModal('modal-event-submit');
+
+  if (data.aiReviewed) {
+    if (data.aiApproved) {
+      showToast(`🤖 IA aprovou sua prova! ${data.aiReason ? '— ' + data.aiReason : ''}`);
+    } else {
+      showToast(`🤖 IA rejeitou: ${data.aiReason || 'Foto não comprova a etapa.'}`);
+    }
+  } else {
+    showToast('📸 Prova enviada! Aguardando aprovação dos amigos.');
+  }
   loadEvents();
 }
 
@@ -3805,25 +3815,38 @@ async function loadVerifications() {
   const el = document.getElementById('verify-feed');
   el.innerHTML = '<div class="verify-empty">Carregando...</div>';
 
+  // Busca apenas amigos do usuário atual
+  const { data: friendRows } = await supabaseClient
+    .from('friends').select('friend_id').eq('user_id', currentUser.id);
+  const friendIds = (friendRows || []).map(r => r.friend_id);
+
+  if (friendIds.length === 0) {
+    el.innerHTML = '<div class="verify-empty">Adicione amigos para ver e aprovar as provas deles! 👥</div>';
+    return;
+  }
+
   const { data: verifs } = await supabaseClient.from('verifications')
-    .select('*').eq('status', 'pending').neq('user_id', currentUser.id)
+    .select('*').eq('status', 'pending')
+    .in('user_id', friendIds)
     .order('created_at', { ascending: false });
 
   if (!verifs || verifs.length === 0) {
-    el.innerHTML = '<div class="verify-empty">Nenhuma prova pendente para revisar. 🎉</div>';
+    el.innerHTML = '<div class="verify-empty">Nenhuma prova pendente dos seus amigos. 🎉</div>';
     return;
   }
 
   const vIds = verifs.map(v => v.id);
   const uIds = [...new Set(verifs.map(v => v.user_id))];
 
-  const [{ data: allVotes }, { data: profiles }, { count: totalUsers }] = await Promise.all([
+  const [{ data: allVotes }, { data: profiles }, { data: friendCounts }] = await Promise.all([
     supabaseClient.from('verification_votes').select('*').in('verification_id', vIds),
     supabaseClient.from('user_profiles').select('id,username,avatar_emoji').in('id', uIds),
-    supabaseClient.from('user_profiles').select('*', { count: 'exact', head: true })
+    // Conta amigos de cada submissor para calcular threshold correto
+    Promise.all(uIds.map(uid =>
+      supabaseClient.from('friends').select('id', { count: 'exact', head: true }).eq('user_id', uid)
+        .then(r => ({ uid, count: r.count || 1 }))
+    )),
   ]);
-
-  const threshold = getMajorityThreshold(totalUsers || 1);
 
   el.innerHTML = verifs.map(v => {
     const prof = (profiles || []).find(p => p.id === v.user_id) || {};
@@ -3834,6 +3857,8 @@ async function loadVerifications() {
     const voted = !!myVote;
     const typeLabel = v.type === 'habit' ? 'HÁBITO' : v.type === 'event' ? 'EVENTO ⚡' : 'TAREFA';
     const timeAgo = timeSince(v.created_at);
+    const submitterFriendCount = (friendCounts || []).find(f => f.uid === v.user_id)?.count || 1;
+    const threshold = Math.max(1, Math.ceil(submitterFriendCount / 2));
 
     return `<div class="verify-card">
       <div class="verify-card-header">
@@ -3848,35 +3873,40 @@ async function loadVerifications() {
       ${v.photo_url ? `<img class="verify-card-photo" src="${v.photo_url}" alt="Prova" style="cursor:zoom-in" onclick="openLightbox('${v.photo_url}')">` : '<div style="padding:16px;text-align:center;color:var(--muted);font-size:11px">Sem foto</div>'}
       <div class="verify-card-footer">
         <div class="verify-vote-info">✅ ${approvals} / ❌ ${rejections} &nbsp;|&nbsp; precisa ${threshold}</div>
-        <button class="btn-approve ${voted ? 'btn-voted' : ''}" onclick="voteVerification('${v.id}','approve')">✅ Aprovar</button>
-        <button class="btn-reject ${voted ? 'btn-voted' : ''}" onclick="voteVerification('${v.id}','reject')">❌ Rejeitar</button>
+        <button class="btn-approve ${voted ? 'btn-voted' : ''}" onclick="voteVerification('${v.id}','approve','${v.user_id}')">✅ Aprovar</button>
+        <button class="btn-reject ${voted ? 'btn-voted' : ''}" onclick="voteVerification('${v.id}','reject','${v.user_id}')">❌ Rejeitar</button>
       </div>
     </div>`;
   }).join('');
 }
 
 async function updateVerifyBadge() {
+  const { data: friendRows } = await supabaseClient
+    .from('friends').select('friend_id').eq('user_id', currentUser.id);
+  const friendIds = (friendRows || []).map(r => r.friend_id);
+  const badge = document.getElementById('verify-badge');
+  if (!friendIds.length) { badge.style.display = 'none'; return; }
   const { count } = await supabaseClient.from('verifications')
     .select('*', { count: 'exact', head: true })
-    .eq('status', 'pending').neq('user_id', currentUser.id);
-  const badge = document.getElementById('verify-badge');
+    .eq('status', 'pending').in('user_id', friendIds);
   if (count > 0) { badge.textContent = count; badge.style.display = 'inline-flex'; }
   else { badge.style.display = 'none'; }
 }
 
-async function voteVerification(verificationId, vote) {
+async function voteVerification(verificationId, vote, submitterUserId) {
   const { error } = await supabaseClient.from('verification_votes').insert({
     verification_id: verificationId, voter_id: currentUser.id, vote
   });
   if (error) { showToast('Erro ao votar.'); return; }
 
-  const [{ data: votes }, { count: totalUsers }] = await Promise.all([
+  // Threshold baseado nos amigos do submissor (não total de usuários)
+  const [{ data: votes }, { count: submitterFriendCount }] = await Promise.all([
     supabaseClient.from('verification_votes').select('*').eq('verification_id', verificationId),
-    supabaseClient.from('user_profiles').select('*', { count: 'exact', head: true })
+    supabaseClient.from('friends').select('id', { count: 'exact', head: true }).eq('user_id', submitterUserId),
   ]);
 
-  const threshold   = getMajorityThreshold(totalUsers || 1);
-  const totalOthers = (totalUsers || 1) - 1;
+  const threshold   = Math.max(1, Math.ceil((submitterFriendCount || 1) / 2));
+  const totalOthers = submitterFriendCount || 1;
   const approvals   = (votes || []).filter(v => v.vote === 'approve').length;
   const rejections  = (votes || []).filter(v => v.vote === 'reject').length;
 
