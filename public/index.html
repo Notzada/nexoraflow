@@ -721,6 +721,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
             <span class="month-label" id="exp-month-label">—</span>
             <button class="month-btn" onclick="changeMonth(1)" id="exp-next-btn">›</button>
           </div>
+          <button onclick="openCatManager()" title="Gerenciar categorias" style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--muted);transition:all .15s;line-height:1;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='rgba(168,85,247,.4)'" onmouseout="this.style.color='';this.style.borderColor=''"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:15px;height:15px;display:block;"><circle cx="8" cy="8" r="2.5"/><path d="M13.3 10a1.2 1.2 0 00.2 1.3l.04.04a1.45 1.45 0 11-2.05 2.05l-.04-.04a1.2 1.2 0 00-1.3-.2 1.2 1.2 0 00-.73 1.1v.12a1.45 1.45 0 11-2.9 0v-.06a1.2 1.2 0 00-.78-1.1 1.2 1.2 0 00-1.3.2l-.04.04a1.45 1.45 0 11-2.05-2.05l.04-.04a1.2 1.2 0 00.2-1.3 1.2 1.2 0 00-1.1-.73H1.45a1.45 1.45 0 010-2.9h.06a1.2 1.2 0 001.1-.78 1.2 1.2 0 00-.2-1.3l-.04-.04A1.45 1.45 0 114.42 2.1l.04.04a1.2 1.2 0 001.3.2h.06a1.2 1.2 0 00.73-1.1V1.12a1.45 1.45 0 012.9 0v.06a1.2 1.2 0 00.73 1.1 1.2 1.2 0 001.3-.2l.04-.04a1.45 1.45 0 112.05 2.05l-.04.04a1.2 1.2 0 00-.2 1.3v.06a1.2 1.2 0 001.1.73h.12a1.45 1.45 0 010 2.9h-.06a1.2 1.2 0 00-1.1.73z"/></svg></button>
           <button class="add-btn" onclick="addExpensePrompt()">+ Registrar</button>
         </div>
       </div>
@@ -889,14 +890,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 
     <div class="page" id="page-settings">
       <div class="page-header"><div><div class="page-title">Configurações</div><div class="page-subtitle">Perfil e preferências</div></div></div>
-
-      <!-- Categorias de Gastos -->
-      <div class="chart-card" style="margin-bottom:16px;">
-        <div class="card-title" style="margin-bottom:4px">Categorias de Gastos</div>
-        <div class="card-sub">Personalize as categorias que aparecem ao registrar um gasto.</div>
-        <div id="cat-manager-grid" class="cat-grid"></div>
-        <button class="add-cat-btn" style="margin-top:10px;" onclick="openAddCatModal()">＋ Nova categoria</button>
-      </div>
 
       <div class="chart-card">
         <div class="card-title" style="margin-bottom:4px">Meu Perfil</div>
@@ -1299,6 +1292,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 
     <div class="modal-actions" style="margin-top:16px;">
       <button class="modal-cancel" onclick="closeModal('modal-friends')" style="width:100%;">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Gerenciar Categorias -->
+<div class="modal-overlay" id="modal-cat-manager" style="display:none" onclick="if(event.target===this)closeModal('modal-cat-manager')">
+  <div class="modal-box" style="max-width:540px;">
+    <div class="modal-title">⚙️ Categorias de Gastos</div>
+    <div class="card-sub" style="margin-bottom:14px;">Personalize as categorias que aparecem ao registrar um gasto.</div>
+    <div id="cat-manager-grid" class="cat-grid"></div>
+    <button class="add-cat-btn" style="margin-top:10px;" onclick="openAddCatModal()">＋ Nova categoria</button>
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="modal-cancel" onclick="closeModal('modal-cat-manager')" style="width:100%;">Fechar</button>
     </div>
   </div>
 </div>
@@ -1900,6 +1906,11 @@ function populateCatSelects() {
   });
 }
 
+function openCatManager() {
+  renderCatManager();
+  document.getElementById('modal-cat-manager').style.display = 'flex';
+}
+
 function renderCatManager() {
   const grid = document.getElementById('cat-manager-grid');
   if (!grid) return;
@@ -2302,7 +2313,7 @@ function loadPage(id) {
   }
   if(id==='goals')    loadGoals();
   if(id==='dashboard') loadDashboard();
-  if(id==='settings') { loadSettings(); renderCatManager(); }
+  if(id==='settings') loadSettings();
   if(id==='ranking')  loadRanking();
   if(id==='verify')   loadVerifications();
   if(id==='events')   loadEvents();
