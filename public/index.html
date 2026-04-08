@@ -641,7 +641,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
         <div class="user-xp-bar"><div class="user-xp-fill" id="sidebar-xp-bar" style="width:0%"></div></div>
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <div class="user-xp-text" id="sidebar-xp-text">0 XP</div>
-          <div class="coin-badge" id="sidebar-coins">🪙 0</div>
+          <div class="coin-badge" id="sidebar-coins">0</div>
         </div>
       </div>
     </div>
@@ -837,7 +837,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
             <div class="profile-stat-lab">👥 Amigos</div>
           </div>
           <div onclick="openShop()" style="cursor:pointer;" title="Abrir loja">
-            <div class="profile-stat-val coin-badge" id="prof-coins" style="font-size:16px;">🪙 0</div>
+            <div class="profile-stat-val coin-badge" id="prof-coins" style="font-size:16px;">0</div>
             <div class="profile-stat-lab">Coins</div>
           </div>
         </div>
@@ -1363,7 +1363,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
   <div class="modal-box" style="max-width:560px;max-height:85vh;overflow-y:auto;">
     <div class="modal-title">🛍️ Loja de Tags</div>
     <div class="shop-balance">
-      <div class="shop-balance-icon">🪙</div>
+      <div class="shop-balance-icon"><img src="/nexcoin.png" style="width:32px;height:32px;object-fit:contain;"></div>
       <div>
         <div class="shop-balance-val" id="shop-coins-val">0</div>
         <div class="shop-balance-lab">coins disponíveis</div>
@@ -1663,7 +1663,7 @@ function updateSidebarProfile() {
   document.getElementById('sidebar-level').textContent    = `Nível ${level}`;
   document.getElementById('sidebar-xp-bar').style.width   = pct + '%';
   document.getElementById('sidebar-xp-text').textContent  = `${currentProfile.xp || 0} XP`;
-  document.getElementById('sidebar-coins').textContent    = `🪙 ${currentProfile.coins || 0}`;
+  document.getElementById('sidebar-coins').innerHTML      = `${coinIcon(14)} ${currentProfile.coins || 0}`;
   // Mobile menu
   setAvatar(document.getElementById('mob-avatar'), currentProfile.avatar_emoji);
   const mobUser = document.getElementById('mob-username');
@@ -2482,18 +2482,22 @@ function tagBadgeHTML(tagId) {
   return `<span class="tag-badge ${RARITY_CSS[t.rarity]}">${t.emoji} ${t.name}</span>`;
 }
 
+function coinIcon(size = 16) {
+  return `<img src="/nexcoin.png" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;display:inline-block;">`;
+}
+
 function showCoinPopup(amount) {
   const el = document.getElementById('coin-popup');
-  el.textContent = `🪙 +${amount} coins`;
+  el.innerHTML = `${coinIcon(15)} +${amount} coins`;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2500);
 }
 
 function updateCoinsDisplay(coins) {
   const c = coins ?? (currentProfile?.coins ?? 0);
-  document.getElementById('sidebar-coins').textContent = `🪙 ${c}`;
+  document.getElementById('sidebar-coins').innerHTML = `${coinIcon(14)} ${c}`;
   const profCoins = document.getElementById('prof-coins');
-  if (profCoins) profCoins.textContent = `🪙 ${c}`;
+  if (profCoins) profCoins.innerHTML = `${coinIcon(18)} ${c}`;
   const shopVal = document.getElementById('shop-coins-val');
   if (shopVal) shopVal.textContent = c;
   if (currentProfile) currentProfile.coins = c;
@@ -2510,7 +2514,7 @@ async function callDailyLogin() {
     const data = await res.json();
     if (data.granted) {
       updateCoinsDisplay(data.coins);
-      setTimeout(() => { showToast('🪙 +5 coins — login diário!'); showCoinPopup(5); }, 1500);
+      setTimeout(() => { showToast('+5 coins — login diário!'); showCoinPopup(5); }, 1500);
     } else {
       updateCoinsDisplay(data.coins);
     }
@@ -2547,7 +2551,7 @@ async function loadShop() {
         </div>
         <div class="shop-item-desc">${item.desc}</div>
         <div class="shop-item-footer">
-          <div class="shop-item-cost">${item.owned ? '✓ Comprado' : `🪙 ${item.cost}`}</div>
+          <div class="shop-item-cost">${item.owned ? '✓ Comprado' : `${coinIcon(13)} ${item.cost}`}</div>
           ${btn}
         </div>
       </div>`;
