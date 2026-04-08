@@ -1409,21 +1409,30 @@ async function executarFerramenta(tool_name, tool_input, userId, clientNow, tzOf
       return `Tarefa "${text}" criada${due_date ? ` para ${due_date}` : ''}${due_time ? ` às ${due_time}` : ''}!`;
     }
 
-    if (tool_name === 'consultar_dados') {
+    if (tool_name === 'consultar' || tool_name === 'consultar_dados') {
       const { tipo } = tool_input;
       if (tipo === 'gastos') {
-        const thisMonth = new Date().toISOString().slice(0, 7);
+        const now = clientNow ? new Date(clientNow) : new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const monthStart = `${year}-${month}-01T00:00:00`;
+        const monthEnd   = `${year}-${month}-31T23:59:59`;
         const { data } = await supabaseAdmin.from('expenses').select('*')
-          .eq('user_id', userId).gte('date', `${thisMonth}-01`);
-        const total = (data||[]).reduce((s,e)=>s+parseFloat(e.amount),0);
-        const byCat = (data||[]).reduce((acc,e)=>{acc[e.category]=(acc[e.category]||0)+parseFloat(e.amount);return acc;},{});
-        const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`${c}: R$${v.toFixed(2)}`).join(', ');
-        return `Este mês: R$${total.toFixed(2)} em ${(data||[]).length} transações. Por categoria: ${cats||'nenhuma'}`;
+          .eq('user_id', userId)
+          .gte('created_at', monthStart)
+          .lte('created_at', monthEnd);
+        const expenses = (data||[]).filter(e => e.category !== 'Renda');
+        const income   = (data||[]).filter(e => e.category === 'Renda');
+        const total    = expenses.reduce((s,e)=>s+parseFloat(e.amount),0);
+        const totalInc = income.reduce((s,e)=>s+parseFloat(e.amount),0);
+        const byCat    = expenses.reduce((acc,e)=>{acc[e.category]=(acc[e.category]||0)+parseFloat(e.amount);return acc;},{});
+        const cats     = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`${c}: R$${v.toFixed(2)}`).join(', ');
+        return `Gastos de ${month}/${year}: R$${total.toFixed(2)} em ${expenses.length} lançamentos. Por categoria: ${cats||'nenhuma'}. Receitas: R$${totalInc.toFixed(2)}. Saldo: R$${(totalInc-total).toFixed(2)}.`;
       }
       if (tipo === 'habitos') {
         const { data: habits } = await supabaseAdmin.from('habits').select('id,name').eq('user_id', userId);
-        const today = new Date().toISOString().split('T')[0];
-        const { data: logs } = await supabaseAdmin.from('habit_logs').select('habit_id').eq('user_id', userId).eq('done_at', today);
+        const todayStr = (clientNow ? new Date(clientNow) : new Date()).toISOString().split('T')[0];
+        const { data: logs } = await supabaseAdmin.from('habit_logs').select('habit_id').eq('user_id', userId).eq('done_at', todayStr);
         const doneIds = new Set((logs||[]).map(l=>l.habit_id));
         const list = (habits||[]).map(h=>`${doneIds.has(h.id)?'✅':'⬜'} ${h.name}`).join(', ');
         return `Hábitos hoje: ${list || 'nenhum cadastrado'}`;
@@ -1433,8 +1442,8 @@ async function executarFerramenta(tool_name, tool_input, userId, clientNow, tzOf
         return `Tarefas pendentes: ${(data||[]).map(t=>`${t.text}${t.due_date?` (${t.due_date})`:''}${t.due_time?` às ${t.due_time}`:''}`).join(', ') || 'nenhuma'}`;
       }
       if (tipo === 'perfil') {
-        const { data } = await supabaseAdmin.from('user_profiles').select('xp,level,username,streak').eq('id', userId).single();
-        return `${data?.username || 'Usuário'} — Nível ${data?.level||1}, ${data?.xp||0} XP, ${data?.streak||0} dias de streak`;
+        const { data } = await supabaseAdmin.from('user_profiles').select('xp,level,username,streak,coins').eq('id', userId).single();
+        return `${data?.username || 'Usuário'} — Nível ${data?.level||1}, ${data?.xp||0} XP, ${data?.streak||0} dias de streak, ${data?.coins||0} coins`;
       }
     }
     return 'Ferramenta desconhecida.';
@@ -1541,6 +1550,8 @@ Regras:
 - Só use data diferente se o usuário explicitamente indicar (ex: "gastei X ontem e Y hoje")
 - Categorias de gasto: Alimentação, Transporte, Saúde, Lazer, Moradia, Educação, Roupas, Outros
 - Tags de tarefa: Pessoal, Trabalho, Saúde, Estudos, Finanças, Outros
+- NUNCA faça perguntas de esclarecimento antes de executar uma consulta — execute imediatamente com os dados disponíveis. "quanto gastei esse mês?" → consultar gastos agora. Não pergunte confirmação.
+- Para qualquer pergunta sobre gastos, hábitos, tarefas ou perfil: use a ação "consultar" diretamente.
 
 ---ACTIONS---
 
