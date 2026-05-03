@@ -180,10 +180,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 .exp-actions{display:flex;gap:6px;align-items:center;}
 .paid-btn{width:26px;height:26px;border-radius:6px;border:1px solid rgba(34,197,94,.25);background:rgba(34,197,94,.06);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;flex-shrink:0;transition:all .2s;line-height:1;}
 .paid-btn:hover{border-color:rgba(34,197,94,.5);color:#22c55e;}
-.paid-btn.active{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.5);color:#22c55e;}
-.expense-item.paid .exp-desc{text-decoration:line-through;opacity:.5;}
-.expense-item.paid .exp-amount{opacity:.45;}
-.expense-item.paid .exp-meta{opacity:.4;}
+.paid-btn.active{background:rgba(34,197,94,.2);border-color:#22c55e;color:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.25);}
+.expense-item{transition:border-color .2s,background .2s;}
+.expense-item.paid{border-left:3px solid #22c55e;background:rgba(34,197,94,.04);}
+.expense-item.paid .exp-desc{text-decoration:line-through;opacity:.45;}
+.expense-item.paid .exp-amount.out{color:#22c55e !important;opacity:.7;}
+.expense-item.paid .exp-meta{opacity:.35;}
+.paid-badge{display:inline-block;font-size:8px;font-family:var(--font-display);font-weight:700;letter-spacing:.8px;background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.35);padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:middle;}
 .habit-del-btn{width:22px;height:22px;border-radius:5px;border:1px solid rgba(224,92,92,.25);background:transparent;color:#6b6f78;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;flex-shrink:0;transition:all .15s;line-height:1;}
 .habit-del-btn:hover{background:rgba(224,92,92,.15);color:var(--red);border-color:var(--red);}
 
@@ -2067,7 +2070,7 @@ function expenseHTML(e, showDel=false) {
   return `<div class="expense-item${isPaid?' paid':''}" id="exp-row-${e.id}">
     <div class="exp-icon" style="background:${color}22">${icon}</div>
     <div class="exp-info">
-      <div class="exp-desc">${e.description}${instBadge}</div>
+      <div class="exp-desc">${e.description}${instBadge}${isPaid?'<span class="paid-badge">PAGO</span>':''}</div>
       <div class="exp-meta">${e.category} · ${date}${e.source==='telegram'?'<span class="tg-badge-small">Telegram</span>':''}</div>
     </div>
     ${amountHTML}
@@ -2895,16 +2898,39 @@ async function deleteGoal(id, name) {
 
 async function togglePaid(id, currentPaid) {
   const newPaid = !currentPaid;
-  await supabaseClient.from('expenses').update({ paid: newPaid }).eq('id', id);
+
+  // Atualiza DOM imediatamente (otimista)
   const row = document.getElementById('exp-row-' + id);
   const btn = document.getElementById('paid-btn-' + id);
-  if (row) row.classList.toggle('paid', newPaid);
+  if (row) {
+    row.classList.toggle('paid', newPaid);
+    // Badge PAGO inline
+    const descEl = row.querySelector('.exp-desc');
+    if (descEl) {
+      const existing = descEl.querySelector('.paid-badge');
+      if (newPaid && !existing) {
+        descEl.insertAdjacentHTML('beforeend', '<span class="paid-badge">PAGO</span>');
+      } else if (!newPaid && existing) {
+        existing.remove();
+      }
+    }
+  }
   if (btn) {
     btn.classList.toggle('active', newPaid);
-    btn.title = newPaid ? 'Marcar como não pago' : 'Marcar como pago';
+    btn.title = newPaid ? 'Desmarcar como pago' : 'Marcar como pago';
     btn.setAttribute('onclick', `togglePaid('${id}',${newPaid})`);
   }
-  showToast(newPaid ? '✅ Marcado como pago!' : 'Marcado como não pago.');
+
+  // Persiste no banco
+  const { error } = await supabaseClient.from('expenses').update({ paid: newPaid }).eq('id', id);
+  if (error) {
+    // Reverte se falhou
+    if (row) row.classList.toggle('paid', currentPaid);
+    if (btn) { btn.classList.toggle('active', currentPaid); btn.setAttribute('onclick', `togglePaid('${id}',${currentPaid})`); }
+    showToast('Erro ao salvar. Tente novamente.');
+    return;
+  }
+  showToast(newPaid ? '✅ Marcado como pago!' : 'Desmarcado.');
 }
 
 async function deleteExpense(id, group='', installments=1, source='') {
