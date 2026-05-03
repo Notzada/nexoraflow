@@ -1310,11 +1310,51 @@ app.post('/api/friend/reject', express.json(), async (req, res) => {
 });
 
 // ============================================
+// CATEGORIAS PERSONALIZADAS (sync cross-device)
+// ============================================
+app.get('/api/categories', async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { data: profile, error: profileErr } = await supabaseAdmin
+    .from('user_profiles')
+    .select('custom_categories')
+    .eq('id', user.id)
+    .single();
+
+  console.log('[categories GET]', user.id, 'result:', profile?.custom_categories, 'err:', profileErr?.message);
+  res.json({ categories: profile?.custom_categories || [] });
+});
+
+app.post('/api/categories', express.json(), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { categories } = req.body;
+  if (!Array.isArray(categories)) return res.status(400).json({ error: 'Invalid' });
+
+  const { error: updateErr } = await supabaseAdmin
+    .from('user_profiles')
+    .update({ custom_categories: categories })
+    .eq('id', user.id);
+
+  console.log('[categories POST]', user.id, 'count:', categories.length, 'err:', updateErr?.message);
+  res.json({ ok: true });
+});
+
+// ============================================
 // SERVIR O FRONTEND (index.html na raiz do projeto)
 // ============================================
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

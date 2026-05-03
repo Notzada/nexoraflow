@@ -178,6 +178,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 .edit-cat-btn{width:26px;height:26px;border-radius:6px;border:1px solid rgba(74,144,217,.3);background:rgba(74,144,217,.08);color:var(--blue);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;flex-shrink:0;transition:all .15s;line-height:1;}
 .edit-cat-btn:hover{background:rgba(74,144,217,.2);border-color:var(--blue);}
 .exp-actions{display:flex;gap:6px;align-items:center;}
+.paid-btn{width:26px;height:26px;border-radius:6px;border:1px solid rgba(34,197,94,.25);background:rgba(34,197,94,.06);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;flex-shrink:0;transition:all .2s;line-height:1;}
+.paid-btn:hover{border-color:rgba(34,197,94,.5);color:#22c55e;}
+.paid-btn.active{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.5);color:#22c55e;}
+.expense-item.paid .exp-desc{text-decoration:line-through;opacity:.5;}
+.expense-item.paid .exp-amount{opacity:.45;}
+.expense-item.paid .exp-meta{opacity:.4;}
 .habit-del-btn{width:22px;height:22px;border-radius:5px;border:1px solid rgba(224,92,92,.25);background:transparent;color:#6b6f78;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;flex-shrink:0;transition:all .15s;line-height:1;}
 .habit-del-btn:hover{background:rgba(224,92,92,.15);color:var(--red);border-color:var(--red);}
 
@@ -1578,12 +1584,13 @@ async function createProfile() {
   startApp();
 }
 
-function startApp() {
+async function startApp() {
   document.getElementById('tg-link').href  = TG_LINK;
   const tgl2 = document.getElementById('tg-link2'); if(tgl2) tgl2.href = TG_LINK;
   document.getElementById('dash-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   updateSidebarProfile();
   showScreen('app');
+  await loadCategoriesFromServer();
   loadAll();
   subscribeRealtime();
   checkGoalAlerts();
@@ -1899,8 +1906,50 @@ function getCats() {
   return [...DEFAULT_CATS, ...custom];
 }
 
+async function syncCategoriesToServer(customCats) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const token = session?.access_token;
+  if (!token) return;
+  try {
+    await fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ categories: customCats }),
+    });
+  } catch(e) {}
+}
+
+async function loadCategoriesFromServer() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const token = session?.access_token;
+  if (!token) return;
+  try {
+    const res = await fetch('/api/categories', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) return;
+    const { categories: serverCats } = await res.json();
+    const local = JSON.parse(localStorage.getItem('nexora_cats') || '[]');
+
+    if (serverCats && serverCats.length > 0) {
+      // Servidor tem dados: merge (local + novos do servidor)
+      const localNames = new Set(local.map(c => c.name));
+      const merged = [...local, ...serverCats.filter(c => !localNames.has(c.name))];
+      localStorage.setItem('nexora_cats', JSON.stringify(merged));
+      populateCatSelects();
+    } else if (local.length > 0) {
+      // Servidor vazio mas localStorage tem categorias: sincroniza pro servidor
+      await syncCategoriesToServer(local);
+    }
+  } catch(e) {}
+}
+
 function getCatColor(name) {
-  return getCats().find(c=>c.name===name)?.color || '#78909c';
+  const found = getCats().find(c => c.name === name);
+  if (found) return found.color;
+  // Deterministic color from name hash for cross-device consistency
+  const palette = ['#f5a623','#4a90d9','#9b72f5','#e05c5c','#22c55e','#ec407a','#4fc3f7','#ff9800','#9c27b0','#00bcd4'];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return palette[Math.abs(hash) % palette.length];
 }
 
 function getCatEmoji(name) {
@@ -1943,6 +1992,7 @@ function deleteCustomCat(name) {
   const custom = JSON.parse(localStorage.getItem('nexora_cats') || '[]');
   const updated = custom.filter(c => c.name !== name);
   localStorage.setItem('nexora_cats', JSON.stringify(updated));
+  syncCategoriesToServer(updated);
   renderCatManager();
   populateCatSelects();
   showToast('🗑️ Categoria removida.');
@@ -1968,6 +2018,7 @@ function confirmAddCat() {
   const custom = JSON.parse(localStorage.getItem('nexora_cats') || '[]');
   custom.push({ name, emoji, color });
   localStorage.setItem('nexora_cats', JSON.stringify(custom));
+  syncCategoriesToServer(custom);
   closeModal('modal-add-cat');
   renderCatManager();
   populateCatSelects();
@@ -2012,7 +2063,8 @@ function expenseHTML(e, showDel=false) {
   const amountHTML = isIncome
     ? `<div class="exp-amount in">+R$${parseFloat(e.amount).toFixed(2)}</div>`
     : `<div class="exp-amount out">-R$${parseFloat(e.amount).toFixed(2)}</div>`;
-  return `<div class="expense-item">
+  const isPaid = !!e.paid;
+  return `<div class="expense-item${isPaid?' paid':''}" id="exp-row-${e.id}">
     <div class="exp-icon" style="background:${color}22">${icon}</div>
     <div class="exp-info">
       <div class="exp-desc">${e.description}${instBadge}</div>
@@ -2020,6 +2072,7 @@ function expenseHTML(e, showDel=false) {
     </div>
     ${amountHTML}
     ${showDel?`<div class="exp-actions">
+      <button class="paid-btn${isPaid?' active':''}" id="paid-btn-${e.id}" title="${isPaid?'Marcar como não pago':'Marcar como pago'}" onclick="togglePaid('${e.id}',${isPaid})">✓</button>
       <button class="edit-cat-btn" title="Editar categoria" onclick="openEditCategory('${e.id}','${descEsc}',${parseFloat(e.amount).toFixed(2)},'${e.category}')">✎</button>
       <button class="del-btn" title="Excluir" onclick="deleteExpense('${e.id}','${group}',${inst},'${e.source}')">✕</button>
     </div>`:''}
@@ -2840,6 +2893,20 @@ async function deleteGoal(id, name) {
   loadGoals();
 }
 
+async function togglePaid(id, currentPaid) {
+  const newPaid = !currentPaid;
+  await supabaseClient.from('expenses').update({ paid: newPaid }).eq('id', id);
+  const row = document.getElementById('exp-row-' + id);
+  const btn = document.getElementById('paid-btn-' + id);
+  if (row) row.classList.toggle('paid', newPaid);
+  if (btn) {
+    btn.classList.toggle('active', newPaid);
+    btn.title = newPaid ? 'Marcar como não pago' : 'Marcar como pago';
+    btn.setAttribute('onclick', `togglePaid('${id}',${newPaid})`);
+  }
+  showToast(newPaid ? '✅ Marcado como pago!' : 'Marcado como não pago.');
+}
+
 async function deleteExpense(id, group='', installments=1, source='') {
   const isFixed = source === 'fixed';
   const isInstallment = !isFixed && installments > 1 && group;
@@ -3571,9 +3638,34 @@ async function loadEvents() {
   const subMap = {};
   (mySubs || []).forEach(s => { subMap[`${s.event_id}_${s.step}`] = s; });
 
-  el.innerHTML = events.map(ev => {
+  const cards = events.map(ev => {
     const endsAt = ev.ends_at ? new Date(ev.ends_at) : null;
-    const daysLeft = endsAt ? Math.max(0, Math.ceil((endsAt - Date.now()) / 86400000)) : null;
+    const now = Date.now();
+    const msExpired = endsAt ? now - endsAt.getTime() : -1;
+    const isExpired = msExpired > 0;
+    const hoursExpired = msExpired / 3600000;
+
+    // Mais de 24h expirado: não mostra
+    if (isExpired && hoursExpired > 24) return '';
+
+    const daysLeft = endsAt && !isExpired ? Math.max(0, Math.ceil((endsAt - now) / 86400000)) : null;
+
+    // Expirado há menos de 24h: mostra como finalizado
+    if (isExpired) {
+      return `<div class="event-card" style="opacity:.55;filter:grayscale(.6)">
+        <div class="event-banner">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div class="event-title" style="margin:0">${ev.title}</div>
+            <span style="font-family:var(--font-display);font-size:9px;font-weight:700;background:rgba(120,144,156,.15);color:var(--muted);border:1px solid rgba(120,144,156,.3);padding:3px 8px;border-radius:6px;letter-spacing:1px">FINALIZADO</span>
+          </div>
+          <div class="event-desc">${ev.description || ''}</div>
+          <div class="event-meta"><span style="color:var(--muted)">⏰ Evento encerrado</span></div>
+        </div>
+        <div class="event-steps" style="padding:16px 24px;text-align:center;color:var(--muted);font-size:12px">
+          Este evento foi encerrado. Fique ligado nos próximos! 🎪
+        </div>
+      </div>`;
+    }
 
     const step1 = subMap[`${ev.id}_1`];
     const step2 = subMap[`${ev.id}_2`];
@@ -3611,7 +3703,7 @@ async function loadEvents() {
         <div class="event-desc">${ev.description || ''}</div>
         <div class="event-meta">
           <span class="event-xp">⭐ +${ev.xp_reward} XP ao concluir</span>
-          ${daysLeft !== null ? `<span>⏰ ${daysLeft} dias restantes</span>` : ''}
+          ${daysLeft !== null ? `<span>⏰ ${daysLeft === 0 ? 'Último dia!' : daysLeft + ' dias restantes'}</span>` : ''}
         </div>
       </div>
       <div class="event-steps">
@@ -3619,7 +3711,9 @@ async function loadEvents() {
         ${stepHTML(2, 'Garrafinha VAZIA', step2, '💧')}
       </div>
     </div>`;
-  }).join('');
+  }).filter(Boolean).join('');
+
+  el.innerHTML = cards || '<div class="empty">Nenhum evento ativo no momento. Volte em breve! 🎪</div>';
 }
 
 function openEventSubmit(eventId, step, label) {
