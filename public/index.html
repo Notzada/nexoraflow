@@ -2075,7 +2075,7 @@ function expenseHTML(e, showDel=false) {
     </div>
     ${amountHTML}
     ${showDel?`<div class="exp-actions">
-      <button class="paid-btn${isPaid?' active':''}" id="paid-btn-${e.id}" title="${isPaid?'Marcar como não pago':'Marcar como pago'}" onclick="togglePaid('${e.id}',${isPaid})">✓</button>
+      ${!isIncome?`<button class="paid-btn${isPaid?' active':''}" id="paid-btn-${e.id}" title="${isPaid?'Desmarcar como pago':'Marcar como pago'}" onclick="togglePaid('${e.id}',${isPaid})">✓</button>`:''}
       <button class="edit-cat-btn" title="Editar categoria" onclick="openEditCategory('${e.id}','${descEsc}',${parseFloat(e.amount).toFixed(2)},'${e.category}')">✎</button>
       <button class="del-btn" title="Excluir" onclick="deleteExpense('${e.id}','${group}',${inst},'${e.source}')">✕</button>
     </div>`:''}
