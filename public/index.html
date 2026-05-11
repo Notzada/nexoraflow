@@ -388,20 +388,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 
 /* ======= TEMA SAKURA ======= */
 body.theme-sakura{
-  --bg:#120a0e;--surface:#1c1118;
-  --border:rgba(244,114,182,0.12);--border2:rgba(244,114,182,0.25);
-  --text:#fdf2f8;--muted:#9c7385;
-  --accent:#f472b6;--accent2:#db2777;--cyan:#f472b6;
+  --bg:#0f0810;--surface:#1a1020;
+  --border:rgba(255,182,193,0.14);--border2:rgba(255,182,193,0.32);
+  --text:#ffffff;--muted:#c49aaa;
+  --accent:#f9a8d4;--accent2:#ec4899;--cyan:#f9a8d4;
 }
-body.theme-sakura .logo h1{text-shadow:0 0 14px rgba(244,114,182,0.7);}
-body.theme-sakura .nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(244,114,182,.06);}
+body.theme-sakura .sidebar,body.theme-sakura .main{position:relative;z-index:2;}
+body.theme-sakura .logo h1{text-shadow:0 0 16px rgba(249,168,212,0.85);color:#f9a8d4;}
+body.theme-sakura .nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(249,168,212,.08);}
 body.theme-sakura .ws-dot{background:var(--accent);}
-body.theme-sakura .tg-badge{background:rgba(244,114,182,.08);border-color:rgba(244,114,182,.25);color:var(--accent);}
-body.theme-sakura .profile-hero::before{background:radial-gradient(circle,rgba(244,114,182,.15),transparent 70%);}
-body.theme-sakura .profile-xp-fill{background:linear-gradient(90deg,var(--accent),#fda4af);}
-body.theme-sakura .conquest-card.unlocked{border-color:rgba(244,114,182,.4);background:rgba(244,114,182,.07);box-shadow:0 0 12px rgba(244,114,182,.1);}
-body.theme-sakura .xp-popup{background:var(--accent);}
-body.theme-sakura .shop-item-btn.active-btn{background:rgba(244,114,182,.15);color:var(--accent);border-color:rgba(244,114,182,.3);}
+body.theme-sakura .tg-badge{background:rgba(249,168,212,.1);border-color:rgba(249,168,212,.3);color:var(--accent);}
+body.theme-sakura .profile-hero::before{background:radial-gradient(circle,rgba(249,168,212,.22),transparent 70%);}
+body.theme-sakura .profile-xp-fill{background:linear-gradient(90deg,var(--accent),#fecdd3);}
+body.theme-sakura .conquest-card.unlocked{border-color:rgba(249,168,212,.45);background:rgba(249,168,212,.09);box-shadow:0 0 14px rgba(249,168,212,.15);}
+body.theme-sakura .xp-popup{background:var(--accent);color:#0f0810;}
+body.theme-sakura .shop-item-btn.active-btn{background:rgba(249,168,212,.15);color:var(--accent);border-color:rgba(249,168,212,.35);}
+body.theme-sakura .page-title{color:#ffffff;}
+body.theme-sakura .stat-card{border-color:rgba(255,255,255,0.07);}
+body.theme-sakura .profile-hero{border-color:rgba(255,182,193,0.2);}
+body.theme-sakura .modal-box{border-color:rgba(255,182,193,0.2);}
+body.theme-sakura .user-avatar{background:rgba(249,168,212,.15);border-color:rgba(249,168,212,.3);}
+body.theme-sakura .config-btn{color:#0f0810;}
 
 /* ======= SIDEBAR — USER WIDGET ======= */
 .user-widget{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:10px;}
@@ -2746,12 +2753,83 @@ async function buyItem(itemId) {
   await loadShop();
 }
 
+function getSakuraSVG() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 720" width="440" height="720">
+    <path d="M 400 0 C 380 90 350 180 290 280 C 230 378 130 460 30 650" stroke="#6b3045" stroke-width="6.5" fill="none" stroke-linecap="round" opacity="0.55"/>
+    <path d="M 348 128 C 375 88 408 58 432 32" stroke="#6b3045" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <path d="M 275 272 C 316 242 368 226 398 212" stroke="#6b3045" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.45"/>
+    <path d="M 216 360 C 172 332 132 296 112 258" stroke="#6b3045" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.42"/>
+    <path d="M 162 442 C 118 418 78 396 52 368" stroke="#6b3045" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.38"/>
+    <path d="M 330 192 C 310 158 318 124 338 96" stroke="#6b3045" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.38"/>
+
+    <g transform="translate(400,14)" opacity="0.88">
+      <ellipse cx="0" cy="-11" rx="6.5" ry="10" fill="#ffb3d1"/><ellipse cx="0" cy="-11" rx="6.5" ry="10" fill="#ffe4f0" transform="rotate(72,0,0)"/><ellipse cx="0" cy="-11" rx="6.5" ry="10" fill="#ff8fb9" transform="rotate(144,0,0)"/><ellipse cx="0" cy="-11" rx="6.5" ry="10" fill="#ffd6e8" transform="rotate(216,0,0)"/><ellipse cx="0" cy="-11" rx="6.5" ry="10" fill="#ffb3d1" transform="rotate(288,0,0)"/>
+      <circle cx="0" cy="0" r="4" fill="#fff8fb"/>
+    </g>
+    <g transform="translate(432,32)" opacity="0.82">
+      <ellipse cx="0" cy="-9" rx="5.5" ry="8" fill="#ffc8e0"/><ellipse cx="0" cy="-9" rx="5.5" ry="8" fill="#ffb3d1" transform="rotate(72,0,0)"/><ellipse cx="0" cy="-9" rx="5.5" ry="8" fill="#ff9fc6" transform="rotate(144,0,0)"/><ellipse cx="0" cy="-9" rx="5.5" ry="8" fill="#ffe4f0" transform="rotate(216,0,0)"/><ellipse cx="0" cy="-9" rx="5.5" ry="8" fill="#ffb3d1" transform="rotate(288,0,0)"/>
+      <circle cx="0" cy="0" r="3" fill="#fff5f8"/>
+    </g>
+    <g transform="translate(397,212)" opacity="0.78">
+      <ellipse cx="0" cy="-9" rx="5.5" ry="8" fill="#ffb3d1"/><ellipse cx="0" cy="-9" rx="5.5" ry="8" fill="#ffd6e8" transform="rotate(72,0,0)"/><ellipse cx="0" cy="-9" rx="5.5" ry="8" fill="#ff8fb9" transform="rotate(144,0,0)"/><ellipse cx="0" cy="-9" rx="5.5" ry="8" fill="#ffb3d1" transform="rotate(216,0,0)"/><ellipse cx="0" cy="-9" rx="5.5" ry="8" fill="#ffd6e8" transform="rotate(288,0,0)"/>
+      <circle cx="0" cy="0" r="3" fill="#fff0f5"/>
+    </g>
+    <g transform="translate(280,270)" opacity="0.74">
+      <ellipse cx="0" cy="-10" rx="6" ry="9" fill="#ffd6e8"/><ellipse cx="0" cy="-10" rx="6" ry="9" fill="#ffb3d1" transform="rotate(72,0,0)"/><ellipse cx="0" cy="-10" rx="6" ry="9" fill="#ff9fc6" transform="rotate(144,0,0)"/><ellipse cx="0" cy="-10" rx="6" ry="9" fill="#ffe4f0" transform="rotate(216,0,0)"/><ellipse cx="0" cy="-10" rx="6" ry="9" fill="#ffb3d1" transform="rotate(288,0,0)"/>
+      <circle cx="0" cy="0" r="3.5" fill="#fff8fb"/>
+    </g>
+    <g transform="translate(338,96)" opacity="0.72">
+      <ellipse cx="0" cy="-8" rx="5" ry="7.5" fill="#ffb3d1"/><ellipse cx="0" cy="-8" rx="5" ry="7.5" fill="#ffc8e0" transform="rotate(72,0,0)"/><ellipse cx="0" cy="-8" rx="5" ry="7.5" fill="#ff8fb9" transform="rotate(144,0,0)"/><ellipse cx="0" cy="-8" rx="5" ry="7.5" fill="#ffb3d1" transform="rotate(216,0,0)"/><ellipse cx="0" cy="-8" rx="5" ry="7.5" fill="#ffd6e8" transform="rotate(288,0,0)"/>
+      <circle cx="0" cy="0" r="2.5" fill="#fff5f8"/>
+    </g>
+    <g transform="translate(112,258)" opacity="0.7">
+      <ellipse cx="0" cy="-7.5" rx="4.5" ry="7" fill="#ffc8e0"/><ellipse cx="0" cy="-7.5" rx="4.5" ry="7" fill="#ffb3d1" transform="rotate(72,0,0)"/><ellipse cx="0" cy="-7.5" rx="4.5" ry="7" fill="#ff9fc6" transform="rotate(144,0,0)"/><ellipse cx="0" cy="-7.5" rx="4.5" ry="7" fill="#ffd6e8" transform="rotate(216,0,0)"/><ellipse cx="0" cy="-7.5" rx="4.5" ry="7" fill="#ffb3d1" transform="rotate(288,0,0)"/>
+      <circle cx="0" cy="0" r="2.5" fill="#fff5f8"/>
+    </g>
+    <g transform="translate(52,368)" opacity="0.65">
+      <ellipse cx="0" cy="-7" rx="4" ry="6.5" fill="#ffb3d1"/><ellipse cx="0" cy="-7" rx="4" ry="6.5" fill="#ffd6e8" transform="rotate(72,0,0)"/><ellipse cx="0" cy="-7" rx="4" ry="6.5" fill="#ff8fb9" transform="rotate(144,0,0)"/><ellipse cx="0" cy="-7" rx="4" ry="6.5" fill="#ffb3d1" transform="rotate(216,0,0)"/><ellipse cx="0" cy="-7" rx="4" ry="6.5" fill="#ffc8e0" transform="rotate(288,0,0)"/>
+      <circle cx="0" cy="0" r="2" fill="#fff0f5"/>
+    </g>
+    <g transform="translate(218,362)" opacity="0.62">
+      <ellipse cx="0" cy="-7" rx="4" ry="6" fill="#ffd6e8"/><ellipse cx="0" cy="-7" rx="4" ry="6" fill="#ffb3d1" transform="rotate(72,0,0)"/><ellipse cx="0" cy="-7" rx="4" ry="6" fill="#ff9fc6" transform="rotate(144,0,0)"/><ellipse cx="0" cy="-7" rx="4" ry="6" fill="#ffd6e8" transform="rotate(216,0,0)"/><ellipse cx="0" cy="-7" rx="4" ry="6" fill="#ffb3d1" transform="rotate(288,0,0)"/>
+      <circle cx="0" cy="0" r="2" fill="#fff5f8"/>
+    </g>
+
+    <ellipse cx="75" cy="140" rx="4" ry="6" fill="#ffb3d1" opacity="0.32" transform="rotate(28,75,140)"/>
+    <ellipse cx="190" cy="55"  rx="3" ry="5" fill="#ffc8e0" opacity="0.28" transform="rotate(-22,190,55)"/>
+    <ellipse cx="360" cy="340" rx="3.5" ry="5.5" fill="#ffb3d1" opacity="0.28" transform="rotate(48,360,340)"/>
+    <ellipse cx="155" cy="530" rx="3" ry="4.5" fill="#ffd6e8" opacity="0.22" transform="rotate(-18,155,530)"/>
+    <ellipse cx="42"  cy="220" rx="3" ry="5"   fill="#ffb3d1" opacity="0.26" transform="rotate(62,42,220)"/>
+    <ellipse cx="308" cy="458" rx="4" ry="6"   fill="#ffc8e0" opacity="0.24" transform="rotate(-32,308,458)"/>
+    <ellipse cx="104" cy="448" rx="3" ry="5"   fill="#ffb3d1" opacity="0.22" transform="rotate(18,104,448)"/>
+    <ellipse cx="248" cy="168" rx="3.5" ry="5.5" fill="#ffd6e8" opacity="0.26" transform="rotate(-44,248,168)"/>
+    <ellipse cx="420" cy="142" rx="3" ry="5"   fill="#ffb3d1" opacity="0.24" transform="rotate(10,420,142)"/>
+    <ellipse cx="180" cy="640" rx="3" ry="4.5" fill="#ffc8e0" opacity="0.18" transform="rotate(35,180,640)"/>
+  </svg>`;
+}
+
+function addSakuraDecoration() {
+  if (document.getElementById('sakura-deco')) return;
+  const el = document.createElement('div');
+  el.id = 'sakura-deco';
+  el.style.cssText = 'position:fixed;top:0;right:0;width:440px;height:720px;pointer-events:none;z-index:0;overflow:hidden;opacity:0.38;';
+  el.innerHTML = getSakuraSVG();
+  document.body.appendChild(el);
+}
+
+function removeSakuraDecoration() {
+  const el = document.getElementById('sakura-deco');
+  if (el) el.remove();
+}
+
 function equipTheme(themeId) {
   document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
+  removeSakuraDecoration();
   if (themeId) {
     const className = 'theme-' + themeId.replace('theme_', '');
     document.body.classList.add(className);
     localStorage.setItem('nexora_active_theme', themeId);
+    if (themeId === 'theme_sakura') addSakuraDecoration();
   } else {
     localStorage.removeItem('nexora_active_theme');
   }
@@ -2763,6 +2841,7 @@ function restoreTheme() {
   if (saved) {
     const className = 'theme-' + saved.replace('theme_', '');
     document.body.classList.add(className);
+    if (saved === 'theme_sakura') addSakuraDecoration();
   }
 }
 
