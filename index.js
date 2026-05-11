@@ -19,6 +19,14 @@ const { addWeeklyXP, getWeeklyRanking, getFriendRanking } = require('./services/
 const { ensureReferralCode, addFriend, getFriends }       = require('./services/friendService');
 const { checkAndGrantAchievements }                       = require('./services/achievementService');
 const { addCoins, spendCoins, getHabitStreak, SHOP_ITEMS } = require('./services/coinService');
+const webpush = require('web-push');
+const cron    = require('node-cron');
+
+webpush.setVapidDetails(
+  'mailto:pintodiego52@gmail.com',
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 
 const app = express();
 app.use(express.json());
@@ -1345,6 +1353,95 @@ app.post('/api/categories', express.json(), async (req, res) => {
   console.log('[categories POST]', user.id, 'count:', categories.length, 'err:', updateErr?.message);
   res.json({ ok: true });
 });
+
+// ============================================
+// PUSH NOTIFICATIONS
+// ============================================
+app.get('/api/push/vapid-key', (req, res) => {
+  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
+});
+
+app.post('/api/push/subscribe', express.json(), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { subscription } = req.body;
+  if (!subscription?.endpoint) return res.status(400).json({ error: 'Invalid subscription' });
+
+  await supabaseAdmin.from('push_subscriptions').upsert(
+    { user_id: user.id, endpoint: subscription.endpoint, subscription },
+    { onConflict: 'endpoint' }
+  );
+  res.json({ ok: true });
+});
+
+app.post('/api/push/unsubscribe', express.json(), async (req, res) => {
+  const { endpoint } = req.body;
+  if (endpoint) await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', endpoint);
+  res.json({ ok: true });
+});
+
+// Envia notificação para um usuário específico
+async function sendPushToUser(userId, title, body) {
+  const { data: subs } = await supabaseAdmin
+    .from('push_subscriptions')
+    .select('subscription, endpoint')
+    .eq('user_id', userId);
+
+  if (!subs || subs.length === 0) return;
+
+  const payload = JSON.stringify({ title, body });
+  for (const row of subs) {
+    try {
+      await webpush.sendNotification(row.subscription, payload);
+    } catch (err) {
+      // Subscription expirada — remove
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', row.endpoint);
+      }
+    }
+  }
+}
+
+// Cron: todo dia às 08:00 (horário de Brasília = UTC-3 → 11:00 UTC)
+cron.schedule('0 11 * * *', async () => {
+  console.log('[PUSH] Disparando notificações de tarefas do dia...');
+  const today = new Date().toISOString().split('T')[0];
+
+  // Busca todos os usuários com push subscription
+  const { data: subs } = await supabaseAdmin
+    .from('push_subscriptions')
+    .select('user_id')
+    .order('user_id');
+
+  if (!subs || subs.length === 0) return;
+
+  const userIds = [...new Set(subs.map(s => s.user_id))];
+
+  for (const userId of userIds) {
+    const { data: tasks } = await supabaseAdmin
+      .from('tasks')
+      .select('id, description')
+      .eq('user_id', userId)
+      .eq('done', false)
+      .gte('created_at', today + 'T00:00:00')
+      .lte('created_at', today + 'T23:59:59');
+
+    if (!tasks || tasks.length === 0) continue;
+
+    const count = tasks.length;
+    await sendPushToUser(
+      userId,
+      '📋 NexoraFlow — Tarefas do dia',
+      count === 1
+        ? `Você tem 1 tarefa pendente hoje: "${tasks[0].description}"`
+        : `Você tem ${count} tarefas pendentes hoje. Bora lá! 💪`
+    );
+  }
+  console.log(`[PUSH] Notificações enviadas para ${userIds.length} usuários.`);
+}, { timezone: 'America/Sao_Paulo' });
 
 // ============================================
 // SERVIR O FRONTEND (index.html na raiz do projeto)
