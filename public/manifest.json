@@ -1,28 +1,14 @@
 {
   "name": "NexoraFlow",
   "short_name": "Nexora",
-  "description": "Finanças, hábitos e rotina com IA",
+  "description": "Finanças, hábitos e rotina com gamificação",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#080c14",
-  "theme_color": "#a855f7",
+  "theme_color": "#080c14",
   "orientation": "portrait",
   "icons": [
-    {
-      "src": "/icon.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "/nexcoin.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/nexcoin.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
