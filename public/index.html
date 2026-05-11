@@ -375,6 +375,33 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 .shop-item-btn.active-btn:hover{background:rgba(168,85,247,.25);}
 .coin-popup{position:fixed;top:60px;right:20px;background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.4);color:#f5a623;font-family:var(--font-display);font-size:12px;font-weight:700;padding:8px 16px;border-radius:10px;z-index:500;opacity:0;transform:translateY(-10px);transition:all .3s;pointer-events:none;}
 .coin-popup.show{opacity:1;transform:translateY(0);}
+.shop-section-title{font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:8px 0 10px;border-bottom:1px solid var(--border);margin-bottom:12px;grid-column:1/-1;}
+.shop-theme-card{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s;position:relative;overflow:hidden;}
+.shop-theme-card:hover{border-color:var(--border2);}
+.shop-theme-card.owned{border-color:rgba(34,197,94,.25);}
+.shop-theme-preview{display:flex;gap:5px;height:28px;border-radius:8px;overflow:hidden;}
+.shop-theme-swatch{flex:1;}
+.shop-item-btn.equip-btn{background:rgba(79,195,247,.1);color:#4fc3f7;border:1px solid rgba(79,195,247,.3);cursor:pointer;}
+.shop-item-btn.equip-btn:hover{background:rgba(79,195,247,.2);}
+.shop-limited-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#f87171;font-family:var(--font-display);font-size:8px;font-weight:700;letter-spacing:1.5px;padding:2px 7px;border-radius:5px;text-transform:uppercase;animation:limitedPulse 2.5s ease-in-out infinite;}
+@keyframes limitedPulse{0%,100%{border-color:rgba(239,68,68,.35);box-shadow:none}50%{border-color:rgba(239,68,68,.7);box-shadow:0 0 8px rgba(239,68,68,.25);}}
+
+/* ======= TEMA SAKURA ======= */
+body.theme-sakura{
+  --bg:#120a0e;--surface:#1c1118;
+  --border:rgba(244,114,182,0.12);--border2:rgba(244,114,182,0.25);
+  --text:#fdf2f8;--muted:#9c7385;
+  --accent:#f472b6;--accent2:#db2777;--cyan:#f472b6;
+}
+body.theme-sakura .logo h1{text-shadow:0 0 14px rgba(244,114,182,0.7);}
+body.theme-sakura .nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(244,114,182,.06);}
+body.theme-sakura .ws-dot{background:var(--accent);}
+body.theme-sakura .tg-badge{background:rgba(244,114,182,.08);border-color:rgba(244,114,182,.25);color:var(--accent);}
+body.theme-sakura .profile-hero::before{background:radial-gradient(circle,rgba(244,114,182,.15),transparent 70%);}
+body.theme-sakura .profile-xp-fill{background:linear-gradient(90deg,var(--accent),#fda4af);}
+body.theme-sakura .conquest-card.unlocked{border-color:rgba(244,114,182,.4);background:rgba(244,114,182,.07);box-shadow:0 0 12px rgba(244,114,182,.1);}
+body.theme-sakura .xp-popup{background:var(--accent);}
+body.theme-sakura .shop-item-btn.active-btn{background:rgba(244,114,182,.15);color:var(--accent);border-color:rgba(244,114,182,.3);}
 
 /* ======= SIDEBAR — USER WIDGET ======= */
 .user-widget{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:10px;}
@@ -1390,7 +1417,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 <!-- Modal: Loja de Tags -->
 <div class="modal-overlay" id="modal-shop" style="display:none" onclick="if(event.target===this)closeModal('modal-shop')">
   <div class="modal-box" style="max-width:560px;max-height:85vh;overflow-y:auto;">
-    <div class="modal-title">🛍️ Loja de Tags</div>
+    <div class="modal-title">🛍️ Loja</div>
     <div class="shop-balance">
       <div class="shop-balance-icon"><img src="/nexcoin.png" style="width:32px;height:32px;object-fit:contain;"></div>
       <div>
@@ -1588,6 +1615,7 @@ async function createProfile() {
 }
 
 async function startApp() {
+  restoreTheme();
   document.getElementById('tg-link').href  = TG_LINK;
   const tgl2 = document.getElementById('tg-link2'); if(tgl2) tgl2.href = TG_LINK;
   document.getElementById('dash-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
@@ -2539,12 +2567,14 @@ function checkPatchNotes() {
 // COINS & LOJA
 // ============================================
 const SHOP_ITEMS_CLIENT = [
-  { id: 'tag_economista',  name: 'Economista',         emoji: '💰', desc: 'Mestre das finanças pessoais',  cost: 100,  rarity: 'comum'    },
-  { id: 'tag_fantasma',    name: 'Fantasma',            emoji: '👻', desc: 'Ninguém te vê vir',             cost: 150,  rarity: 'comum'    },
-  { id: 'tag_maratonista', name: 'Maratonista',         emoji: '🏃', desc: 'Nunca para, nunca desiste',     cost: 200,  rarity: 'raro'     },
-  { id: 'tag_mestre',      name: 'Mestre dos Hábitos',  emoji: '🧘', desc: 'Disciplina acima de tudo',      cost: 350,  rarity: 'raro'     },
-  { id: 'tag_campeao',     name: 'Campeão',             emoji: '🏆', desc: 'Chegou ao topo do ranking',     cost: 500,  rarity: 'épico'    },
-  { id: 'tag_lendario',    name: 'Lendário',            emoji: '👑', desc: 'Acima de todos',                cost: 1000, rarity: 'lendário' },
+  { id: 'tag_economista',  name: 'Economista',         emoji: '💰', desc: 'Mestre das finanças pessoais',  cost: 100,  rarity: 'comum',    type: 'tag'   },
+  { id: 'tag_fantasma',    name: 'Fantasma',            emoji: '👻', desc: 'Ninguém te vê vir',             cost: 150,  rarity: 'comum',    type: 'tag'   },
+  { id: 'tag_maratonista', name: 'Maratonista',         emoji: '🏃', desc: 'Nunca para, nunca desiste',     cost: 200,  rarity: 'raro',     type: 'tag'   },
+  { id: 'tag_mestre',      name: 'Mestre dos Hábitos',  emoji: '🧘', desc: 'Disciplina acima de tudo',      cost: 350,  rarity: 'raro',     type: 'tag'   },
+  { id: 'tag_campeao',     name: 'Campeão',             emoji: '🏆', desc: 'Chegou ao topo do ranking',     cost: 500,  rarity: 'épico',    type: 'tag'   },
+  { id: 'tag_lendario',    name: 'Lendário',            emoji: '👑', desc: 'Acima de todos',                cost: 1000, rarity: 'lendário', type: 'tag'   },
+  { id: 'theme_sakura',    name: 'Sakura',              emoji: '🌸', desc: 'Rosa e branco como as flores de cerejeira do Japão', cost: 50,  rarity: 'raro', type: 'theme', limited: true,
+    preview: ['#f472b6','#fda4af','#fdf2f8','#1c1118','#120a0e'] },
 ];
 
 const RARITY_CSS = {
@@ -2555,7 +2585,7 @@ const RARITY_CSS = {
 };
 
 function getTagInfo(tagId) {
-  return SHOP_ITEMS_CLIENT.find(i => i.id === tagId) || null;
+  return SHOP_ITEMS_CLIENT.find(i => i.id === tagId && i.type === 'tag') || null;
 }
 
 function tagBadgeHTML(tagId) {
@@ -2661,7 +2691,12 @@ async function loadShop() {
     const res = await fetch('/api/shop', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
     const data = await res.json();
     updateCoinsDisplay(data.coins);
-    grid.innerHTML = data.items.map(item => {
+
+    const activeTheme = localStorage.getItem('nexora_active_theme');
+    const tags   = data.items.filter(i => i.type === 'tag'   || !i.type);
+    const themes = data.items.filter(i => i.type === 'theme');
+
+    const renderTag = item => {
       const rc = RARITY_CSS[item.rarity] || 'comum';
       const btn = item.owned
         ? (item.active
@@ -2682,7 +2717,49 @@ async function loadShop() {
           ${btn}
         </div>
       </div>`;
-    }).join('');
+    };
+
+    const renderTheme = item => {
+      const rc = RARITY_CSS[item.rarity] || 'comum';
+      const clientItem = SHOP_ITEMS_CLIENT.find(c => c.id === item.id);
+      const swatches = (clientItem?.preview || []).map(c => `<div class="shop-theme-swatch" style="background:${c};"></div>`).join('');
+      const isActive = activeTheme === item.id;
+      const btn = item.owned
+        ? (isActive
+            ? `<button class="shop-item-btn active-btn" onclick="equipTheme(null)">✓ Ativo</button>`
+            : `<button class="shop-item-btn equip-btn" onclick="equipTheme('${item.id}')">Aplicar</button>`)
+        : `<button class="shop-item-btn buy" onclick="buyItem('${item.id}')">Comprar</button>`;
+      const limitedBadge = item.limited ? `<span class="shop-limited-badge">⏳ Limitado</span>` : '';
+      return `<div class="shop-theme-card ${item.owned ? 'owned' : ''}" id="shop-card-${item.id}">
+        <div class="shop-item-top">
+          <div class="shop-item-emoji">${item.emoji}</div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <div class="shop-item-name">${item.name}</div>
+              ${limitedBadge}
+            </div>
+            <span class="tag-badge ${rc}" style="margin-left:0;">${item.rarity}</span>
+          </div>
+        </div>
+        <div class="shop-theme-preview">${swatches}</div>
+        <div class="shop-item-desc">${item.desc}</div>
+        <div class="shop-item-footer">
+          <div class="shop-item-cost">${item.owned ? '✓ Comprado' : `${coinIcon(13)} ${item.cost}`}</div>
+          ${btn}
+        </div>
+      </div>`;
+    };
+
+    let html = '';
+    if (themes.length) {
+      html += `<div class="shop-section-title">🎨 Temas</div>`;
+      html += themes.map(renderTheme).join('');
+    }
+    if (tags.length) {
+      html += `<div class="shop-section-title" style="margin-top:${themes.length ? '8px' : '0'};">🏷️ Tags</div>`;
+      html += tags.map(renderTag).join('');
+    }
+    grid.innerHTML = html || '<div style="text-align:center;color:var(--muted);padding:20px;grid-column:1/-1;">Loja vazia.</div>';
   } catch(e) {
     grid.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px;grid-column:1/-1;">Erro ao carregar loja.</div>';
   }
@@ -2698,9 +2775,35 @@ async function buyItem(itemId) {
   const data = await res.json();
   if (!res.ok) { showToast('❌ ' + (data.error || 'Erro ao comprar.')); return; }
   updateCoinsDisplay(data.coins);
-  showToast('🎉 Tag comprada e equipada!');
+  const clientItem = SHOP_ITEMS_CLIENT.find(i => i.id === itemId);
+  if (clientItem?.type === 'theme') {
+    equipTheme(itemId);
+    showToast('🌸 Tema comprado e aplicado!');
+  } else {
+    showToast('🎉 Tag comprada e equipada!');
+    renderProfileTags();
+  }
   await loadShop();
-  renderProfileTags();
+}
+
+function equipTheme(themeId) {
+  document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
+  if (themeId) {
+    const className = 'theme-' + themeId.replace('theme_', '');
+    document.body.classList.add(className);
+    localStorage.setItem('nexora_active_theme', themeId);
+  } else {
+    localStorage.removeItem('nexora_active_theme');
+  }
+  loadShop();
+}
+
+function restoreTheme() {
+  const saved = localStorage.getItem('nexora_active_theme');
+  if (saved) {
+    const className = 'theme-' + saved.replace('theme_', '');
+    document.body.classList.add(className);
+  }
 }
 
 async function equipTag(itemId) {

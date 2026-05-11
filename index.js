@@ -1227,8 +1227,9 @@ app.post('/api/shop/buy', express.json(), async (req, res) => {
   if (!result.ok) return res.status(400).json({ error: result.error });
 
   await supabaseAdmin.from('user_purchases').insert({ user_id: user.id, item_id: itemId });
-  // Equipa automaticamente a tag recém-comprada
-  await supabaseAdmin.from('user_profiles').update({ active_tag: itemId }).eq('id', user.id);
+  if (item.type === 'tag' || !item.type) {
+    await supabaseAdmin.from('user_profiles').update({ active_tag: itemId }).eq('id', user.id);
+  }
 
   res.json({ ok: true, coins: result.newCoins });
 });

@@ -3,12 +3,13 @@
 // ============================================
 
 const SHOP_ITEMS = [
-  { id: 'tag_economista',  name: 'Economista',         emoji: '💰', desc: 'Mestre das finanças pessoais',  cost: 100,  rarity: 'comum'    },
-  { id: 'tag_fantasma',    name: 'Fantasma',            emoji: '👻', desc: 'Ninguém te vê vir',             cost: 150,  rarity: 'comum'    },
-  { id: 'tag_maratonista', name: 'Maratonista',         emoji: '🏃', desc: 'Nunca para, nunca desiste',     cost: 200,  rarity: 'raro'     },
-  { id: 'tag_mestre',      name: 'Mestre dos Hábitos',  emoji: '🧘', desc: 'Disciplina acima de tudo',      cost: 350,  rarity: 'raro'     },
-  { id: 'tag_campeao',     name: 'Campeão',             emoji: '🏆', desc: 'Chegou ao topo do ranking',     cost: 500,  rarity: 'épico'    },
-  { id: 'tag_lendario',    name: 'Lendário',            emoji: '👑', desc: 'Acima de todos',                cost: 1000, rarity: 'lendário' },
+  { id: 'tag_economista',  name: 'Economista',         emoji: '💰', desc: 'Mestre das finanças pessoais',  cost: 100,  rarity: 'comum',    type: 'tag'   },
+  { id: 'tag_fantasma',    name: 'Fantasma',            emoji: '👻', desc: 'Ninguém te vê vir',             cost: 150,  rarity: 'comum',    type: 'tag'   },
+  { id: 'tag_maratonista', name: 'Maratonista',         emoji: '🏃', desc: 'Nunca para, nunca desiste',     cost: 200,  rarity: 'raro',     type: 'tag'   },
+  { id: 'tag_mestre',      name: 'Mestre dos Hábitos',  emoji: '🧘', desc: 'Disciplina acima de tudo',      cost: 350,  rarity: 'raro',     type: 'tag'   },
+  { id: 'tag_campeao',     name: 'Campeão',             emoji: '🏆', desc: 'Chegou ao topo do ranking',     cost: 500,  rarity: 'épico',    type: 'tag'   },
+  { id: 'tag_lendario',    name: 'Lendário',            emoji: '👑', desc: 'Acima de todos',                cost: 1000, rarity: 'lendário', type: 'tag'   },
+  { id: 'theme_sakura',    name: 'Sakura',              emoji: '🌸', desc: 'Rosa e branco como as flores de cerejeira do Japão', cost: 50,  rarity: 'raro', type: 'theme', limited: true },
 ];
 
 const RARITY_COLORS = {
