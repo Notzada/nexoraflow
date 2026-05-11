@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#ffffff"/>
+      <stop offset="30%"  stop-color="#fecdd3"/>
+      <stop offset="65%"  stop-color="#f9a8d4"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+    <radialGradient id="bg" cx="50%" cy="42%" r="52%">
+      <stop offset="0%"   stop-color="#be185d" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#120a0e" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="bigGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="22" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="flowerGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Fundo escuro -->
+  <rect width="512" height="512" rx="96" fill="#120a0e"/>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- Borda sutil rosa -->
+  <rect width="512" height="512" rx="96" fill="none" stroke="#f9a8d4" stroke-width="4" opacity="0.18"/>
+
+  <!-- Underglow das letras -->
+  <text x="256" y="318" text-anchor="middle"
+        font-family="Arial Black, Impact, sans-serif"
+        font-size="252" font-weight="900" letter-spacing="-18"
+        fill="#ec4899" opacity="0.35" filter="url(#bigGlow)">NF</text>
+
+  <!-- Letras NF principais -->
+  <text x="256" y="318" text-anchor="middle"
+        font-family="Arial Black, Impact, sans-serif"
+        font-size="252" font-weight="900" letter-spacing="-18"
+        fill="url(#lg)" filter="url(#glow)">NF</text>
+
+  <!-- Flor grande — topo esquerdo -->
+  <g transform="translate(86,84)" filter="url(#flowerGlow)" opacity="0.95">
+    <ellipse cx="0" cy="-17" rx="9.5" ry="15" fill="#ffb3d1"/>
+    <ellipse cx="0" cy="-17" rx="9.5" ry="15" fill="#ffe4f0" transform="rotate(72,0,0)"/>
+    <ellipse cx="0" cy="-17" rx="9.5" ry="15" fill="#ff85b3" transform="rotate(144,0,0)"/>
+    <ellipse cx="0" cy="-17" rx="9.5" ry="15" fill="#ffd6e8" transform="rotate(216,0,0)"/>
+    <ellipse cx="0" cy="-17" rx="9.5" ry="15" fill="#ffb3d1" transform="rotate(288,0,0)"/>
+    <circle cx="0" cy="0" r="6" fill="#fff8fb"/>
+    <circle cx="0" cy="-17" r="2.5" fill="#fffafc" opacity="0.7"/>
+    <circle cx="0" cy="-17" r="2.5" fill="#fffafc" opacity="0.7" transform="rotate(72,0,0)"/>
+    <circle cx="0" cy="-17" r="2.5" fill="#fffafc" opacity="0.7" transform="rotate(144,0,0)"/>
+    <circle cx="0" cy="-17" r="2.5" fill="#fffafc" opacity="0.7" transform="rotate(216,0,0)"/>
+    <circle cx="0" cy="-17" r="2.5" fill="#fffafc" opacity="0.7" transform="rotate(288,0,0)"/>
+  </g>
+
+  <!-- Flor grande — topo direito -->
+  <g transform="translate(426,84)" filter="url(#flowerGlow)" opacity="0.95">
+    <ellipse cx="0" cy="-17" rx="9.5" ry="15" fill="#ffd6e8"/>
+    <ellipse cx="0" cy="-17" rx="9.5" ry="15" fill="#ffb3d1" transform="rotate(72,0,0)"/>
+    <ellipse cx="0" cy="-17" rx="9.5" ry="15" fill="#ff9fc6" transform="rotate(144,0,0)"/>
+    <ellipse cx="0" cy="-17" rx="9.5" ry="15" fill="#ffe4f0" transform="rotate(216,0,0)"/>
+    <ellipse cx="0" cy="-17" rx="9.5" ry="15" fill="#ffb3d1" transform="rotate(288,0,0)"/>
+    <circle cx="0" cy="0" r="6" fill="#fff5f8"/>
+    <circle cx="0" cy="-17" r="2.5" fill="#fffafc" opacity="0.7"/>
+    <circle cx="0" cy="-17" r="2.5" fill="#fffafc" opacity="0.7" transform="rotate(72,0,0)"/>
+    <circle cx="0" cy="-17" r="2.5" fill="#fffafc" opacity="0.7" transform="rotate(144,0,0)"/>
+    <circle cx="0" cy="-17" r="2.5" fill="#fffafc" opacity="0.7" transform="rotate(216,0,0)"/>
+    <circle cx="0" cy="-17" r="2.5" fill="#fffafc" opacity="0.7" transform="rotate(288,0,0)"/>
+  </g>
+
+  <!-- Flor média — topo centro -->
+  <g transform="translate(256,56)" opacity="0.88">
+    <ellipse cx="0" cy="-12" rx="7" ry="11" fill="#ffb3d1"/>
+    <ellipse cx="0" cy="-12" rx="7" ry="11" fill="#ffe4f0" transform="rotate(72,0,0)"/>
+    <ellipse cx="0" cy="-12" rx="7" ry="11" fill="#ff85b3" transform="rotate(144,0,0)"/>
+    <ellipse cx="0" cy="-12" rx="7" ry="11" fill="#ffd6e8" transform="rotate(216,0,0)"/>
+    <ellipse cx="0" cy="-12" rx="7" ry="11" fill="#ffb3d1" transform="rotate(288,0,0)"/>
+    <circle cx="0" cy="0" r="4.5" fill="#fff8fb"/>
+  </g>
+
+  <!-- Pétalas soltas laterais -->
+  <ellipse cx="148" cy="158" rx="5.5" ry="8.5" fill="#ffb3d1" opacity="0.55" transform="rotate(32,148,158)"/>
+  <ellipse cx="366" cy="158" rx="5"   ry="8"   fill="#ffd6e8" opacity="0.55" transform="rotate(-32,366,158)"/>
+  <ellipse cx="162" cy="396" rx="4.5" ry="7"   fill="#ff9fc6" opacity="0.38" transform="rotate(22,162,396)"/>
+  <ellipse cx="350" cy="396" rx="4"   ry="6.5" fill="#ffb3d1" opacity="0.38" transform="rotate(-22,350,396)"/>
+  <ellipse cx="200" cy="116" rx="3.5" ry="5.5" fill="#ffc8e0" opacity="0.42" transform="rotate(55,200,116)"/>
+  <ellipse cx="312" cy="116" rx="3.5" ry="5.5" fill="#ffd6e8" opacity="0.42" transform="rotate(-55,312,116)"/>
+
+  <!-- "NexoraFlow" -->
+  <text x="256" y="458" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="44" font-weight="700" letter-spacing="3"
+        fill="#f9a8d4" opacity="0.9">NexoraFlow</text>
+</svg>

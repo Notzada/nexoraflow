@@ -2828,26 +2828,44 @@ function removeSakuraDecoration() {
   ['sakura-deco','sakura-deco-2'].forEach(id => { const e = document.getElementById(id); if(e) e.remove(); });
 }
 
+const THEME_ICONS = {
+  'theme_sakura': '/icon-sakura.svg',
+};
+const THEME_COLORS = {
+  'theme_sakura': '#f9a8d4',
+};
+const DEFAULT_ICON  = '/icon.png';
+const DEFAULT_COLOR = '#a855f7';
+
+function setThemeIcon(themeId) {
+  const iconUrl  = THEME_ICONS[themeId]  || DEFAULT_ICON;
+  const color    = THEME_COLORS[themeId] || DEFAULT_COLOR;
+  document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')
+    .forEach(el => { el.type = themeId ? 'image/svg+xml' : 'image/png'; el.href = iconUrl; });
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = color;
+}
+
 function equipTheme(themeId) {
   document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
   removeSakuraDecoration();
   if (themeId) {
-    const className = 'theme-' + themeId.replace('theme_', '');
-    document.body.classList.add(className);
+    document.body.classList.add('theme-' + themeId.replace('theme_', ''));
     localStorage.setItem('nexora_active_theme', themeId);
     if (themeId === 'theme_sakura') addSakuraDecoration();
   } else {
     localStorage.removeItem('nexora_active_theme');
   }
+  setThemeIcon(themeId || null);
   loadShop();
 }
 
 function restoreTheme() {
   const saved = localStorage.getItem('nexora_active_theme');
   if (saved) {
-    const className = 'theme-' + saved.replace('theme_', '');
-    document.body.classList.add(className);
+    document.body.classList.add('theme-' + saved.replace('theme_', ''));
     if (saved === 'theme_sakura') addSakuraDecoration();
+    setThemeIcon(saved);
   }
 }
 
