@@ -1440,65 +1440,25 @@ body.theme-sakura .shop-item-btn.active-btn{background:rgba(244,114,182,.15);col
 <div class="patch-overlay" id="modal-patch" style="display:none" onclick="if(event.target===this)closePatchNotes()">
   <div class="patch-box">
     <div class="patch-header">
-      <span class="patch-version">v2.0 · Patch Notes</span>
+      <span class="patch-version">v2.1 · Patch Notes</span>
       <button class="patch-close" onclick="closePatchNotes()">×</button>
     </div>
     <div class="patch-title">O que há de novo no NexoraFlow</div>
-    <div class="patch-date">Abril 2026</div>
+    <div class="patch-date">Maio 2026</div>
 
     <div class="patch-section">
-      <div class="patch-section-title">NEXO — Assistente IA</div>
+      <div class="patch-section-title">Tarefas <span class="patch-badge new">NOVO</span></div>
       <div class="patch-item">
-        <span class="patch-icon">🤖</span>
-        <div class="patch-text"><strong>NEXO</strong> agora é o nome do seu assistente! Fale com ele em linguagem natural para registrar gastos, marcar hábitos e criar tarefas. <span>Anteriormente chamado de JARVIS.</span></div>
-      </div>
-      <div class="patch-item">
-        <span class="patch-icon">🧾</span>
-        <div class="patch-text"><strong>Múltiplos lançamentos de uma vez</strong> — diga "gastei 50 no mercado e 30 no posto" e o NEXO registra tudo de uma vez.</div>
-      </div>
-      <div class="patch-item">
-        <span class="patch-icon">🕐</span>
-        <div class="patch-text"><strong>Data e hora precisas</strong> — o NEXO usa seu horário local e, se você mencionar uma data específica, ele respeita exatamente o que você disser.</div>
+        <span class="patch-icon">🔔</span>
+        <div class="patch-text"><strong>Notificações de tarefas</strong> — o NexoraFlow agora te avisa quando uma tarefa está próxima do prazo ou atrasada, mesmo com o app fechado. Ative as notificações para não perder nenhum deadline.</div>
       </div>
     </div>
 
     <div class="patch-section">
-      <div class="patch-section-title">Finanças <span class="patch-badge new">NOVO</span></div>
+      <div class="patch-section-title">Loja <span class="patch-badge new">NOVO</span></div>
       <div class="patch-item">
-        <span class="patch-icon">💰</span>
-        <div class="patch-text"><strong>Registre Receitas</strong> — além de gastos, agora você pode registrar entradas como salário, freelance ou reembolso. A aba foi renomeada de "Gastos" para <strong>Finanças</strong>.</div>
-      </div>
-      <div class="patch-item">
-        <span class="patch-icon">📌</span>
-        <div class="patch-text"><strong>Gasto Fixo</strong> — marque um gasto como fixo e ele aparece com o badge <em style="color:#00c896;font-style:normal;">FIXO</em> em vez de ser confundido com parcelas.</div>
-      </div>
-      <div class="patch-item">
-        <span class="patch-icon">📊</span>
-        <div class="patch-text"><strong>Gráficos corrigidos</strong> — receitas não entram mais nas estatísticas de despesas do Dashboard. <span class="patch-badge fix">FIX</span></div>
-      </div>
-    </div>
-
-    <div class="patch-section">
-      <div class="patch-section-title">Hábitos</div>
-      <div class="patch-item">
-        <span class="patch-icon">✏️</span>
-        <div class="patch-text"><strong>Edite hábitos</strong> — agora você pode mudar o nome e o emoji de qualquer hábito diretamente na lista.</div>
-      </div>
-      <div class="patch-item">
-        <span class="patch-icon">🔲</span>
-        <div class="patch-text"><strong>Quadrados maiores</strong> — os dias da semana nos hábitos ficaram maiores e mais fáceis de visualizar.</div>
-      </div>
-    </div>
-
-    <div class="patch-section">
-      <div class="patch-section-title">Social</div>
-      <div class="patch-item">
-        <span class="patch-icon">🏆</span>
-        <div class="patch-text"><strong>Ranking restrito a amigos</strong> — o placar agora mostra apenas quem você adicionou como amigo, sem estranhos.</div>
-      </div>
-      <div class="patch-item">
-        <span class="patch-icon">👥</span>
-        <div class="patch-text"><strong>Remover amigos</strong> — adicionou sem querer? Agora é possível remover amigos direto da lista.</div>
+        <span class="patch-icon">🌸</span>
+        <div class="patch-text"><strong>Tema Sakura — Tempo Limitado!</strong> — um novo tipo de item chegou à loja: <strong>Temas</strong>. O primeiro é o Sakura, inspirado nas flores de cerejeira do Japão. Rosa e branco por toda a interface. Disponível por apenas <strong>50 coins</strong> por tempo limitado.</div>
       </div>
     </div>
 
@@ -2541,7 +2501,7 @@ async function toggleTask(id, newVal, el) {
 // ============================================
 // PATCH NOTES
 // ============================================
-const PATCH_VERSION = 'v2';
+const PATCH_VERSION = 'v2.1';
 function openPatchNotes() {
   document.getElementById('modal-patch').style.display='flex';
   localStorage.setItem('nexora_patch_seen', PATCH_VERSION);

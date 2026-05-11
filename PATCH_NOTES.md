@@ -2,6 +2,21 @@
 
 ---
 
+## v2.1.0 — Notificações & Temas na Loja
+**11 de Maio de 2026**
+
+---
+
+### 🆕 O que há de novo
+
+**🔔 Notificações de Tarefas**
+O NexoraFlow agora envia notificações push mesmo com o app fechado. Quando uma tarefa está próxima do prazo ou atrasada, você recebe um aviso direto no celular ou desktop. Ative as notificações ao acessar o app.
+
+**🌸 Tema Sakura — Tempo Limitado**
+Um novo tipo de item chegou à Loja: **Temas**. O primeiro é o **Sakura**, inspirado nas flores de cerejeira japonesas — paleta rosa e branco aplicada em toda a interface (sidebar, botões, barras de XP, conquistas). Disponível por **50 coins** por tempo limitado, com badge ⏳ pulsante na loja.
+
+---
+
 ## v3.0.0 — Contas, Verificações & Bot Completo
 **03 de Abril de 2026**
 
