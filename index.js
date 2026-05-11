@@ -1435,10 +1435,10 @@ cron.schedule('0 11 * * *', async () => {
     const count = tasks.length;
     await sendPushToUser(
       userId,
-      '📋 NexoraFlow — Tarefas do dia',
+      '📋 Tarefas do dia',
       count === 1
-        ? `Você tem 1 tarefa pendente hoje: "${tasks[0].description}"`
-        : `Você tem ${count} tarefas pendentes hoje. Bora lá! 💪`
+        ? `1 tarefa pendente: "${tasks[0].description}" — bora lá! 💪`
+        : `${count} tarefas pendentes hoje. Você consegue! 💪`
     );
   }
   console.log(`[PUSH] Notificações enviadas para ${userIds.length} usuários.`);
