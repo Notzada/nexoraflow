@@ -2865,6 +2865,9 @@ function equipTheme(themeId) {
   }
   setThemeIcon(themeId || null);
   loadShop();
+  if (themeId) {
+    setTimeout(() => showToast('🏠 Para atualizar o ícone na tela inicial, remova e adicione o app novamente'), 600);
+  }
 }
 
 function restoreTheme() {
