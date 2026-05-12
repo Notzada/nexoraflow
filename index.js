@@ -1198,11 +1198,13 @@ app.get('/api/shop', async (req, res) => {
     .from('user_profiles').select('coins, active_tag').eq('id', user.id).single();
 
   const ownedIds = new Set((purchases || []).map(p => p.item_id));
-  const items = SHOP_ITEMS.map(item => ({
-    ...item,
-    owned: ownedIds.has(item.id),
-    active: profile?.active_tag === item.id,
-  }));
+  const items = SHOP_ITEMS
+    .filter(item => !item.ownerOnly || item.ownerOnly === user.email)
+    .map(item => ({
+      ...item,
+      owned: ownedIds.has(item.id),
+      active: profile?.active_tag === item.id,
+    }));
 
   res.json({ items, coins: profile?.coins || 0 });
 });
@@ -1449,9 +1451,9 @@ cron.schedule('0 11 * * *', async () => {
 // ============================================
 app.get('/manifest.json', (req, res) => {
   const theme = req.query.theme;
-  const THEME_ICONS  = { 'theme_sakura': '/icon_sakura2.png' };
-  const THEME_COLORS = { 'theme_sakura': '#f9a8d4' };
-  const THEME_BG     = { 'theme_sakura': '#120a0e' };
+  const THEME_ICONS  = { 'theme_sakura': '/icon_sakura2.png', 'theme_namorados': '/icon_dia_dos_namorados.png' };
+  const THEME_COLORS = { 'theme_sakura': '#f9a8d4',          'theme_namorados': '#e11d48' };
+  const THEME_BG     = { 'theme_sakura': '#120a0e',           'theme_namorados': '#0d0507' };
   const icon  = THEME_ICONS[theme]  || '/icon.png';
   const color = THEME_COLORS[theme] || '#a855f7';
   const bg    = THEME_BG[theme]     || '#080c14';

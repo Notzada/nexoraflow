@@ -410,6 +410,29 @@ body.theme-sakura .modal-box{border-color:rgba(255,182,193,0.2);}
 body.theme-sakura .user-avatar{background:rgba(249,168,212,.15);border-color:rgba(249,168,212,.3);}
 body.theme-sakura .config-btn{color:#0f0810;}
 
+/* ======= TEMA DIA DOS NAMORADOS ======= */
+body.theme-namorados{
+  --bg:#0d0507;--surface:#1a0810;
+  --border:rgba(225,29,72,0.18);--border2:rgba(251,191,36,0.35);
+  --text:#fff5f0;--muted:#c87080;
+  --accent:#e11d48;--accent2:#be123c;--cyan:#fbbf24;
+}
+body.theme-namorados .sidebar,body.theme-namorados .main{position:relative;z-index:2;}
+body.theme-namorados .logo h1{text-shadow:0 0 18px rgba(225,29,72,0.9);color:#fbbf24;}
+body.theme-namorados .nav-item.active{color:#fbbf24;border-left-color:#fbbf24;background:rgba(251,191,36,.08);}
+body.theme-namorados .ws-dot{background:var(--accent);}
+body.theme-namorados .tg-badge{background:rgba(225,29,72,.1);border-color:rgba(225,29,72,.3);color:#fbbf24;}
+body.theme-namorados .profile-hero::before{background:radial-gradient(circle,rgba(225,29,72,.25),transparent 70%);}
+body.theme-namorados .profile-xp-fill{background:linear-gradient(90deg,var(--accent),#fbbf24);}
+body.theme-namorados .conquest-card.unlocked{border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.07);box-shadow:0 0 16px rgba(225,29,72,.2);}
+body.theme-namorados .xp-popup{background:var(--accent);color:#fff5f0;}
+body.theme-namorados .shop-item-btn.active-btn{background:rgba(225,29,72,.15);color:#fbbf24;border-color:rgba(251,191,36,.35);}
+body.theme-namorados .page-title{color:#fbbf24;}
+body.theme-namorados .stat-card{border-color:rgba(225,29,72,0.12);}
+body.theme-namorados .profile-hero{border-color:rgba(225,29,72,0.25);}
+body.theme-namorados .modal-box{border-color:rgba(225,29,72,0.2);}
+body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rgba(251,191,36,.3);}
+
 /* ======= SIDEBAR — USER WIDGET ======= */
 .user-widget{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:10px;}
 .user-widget-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
@@ -2542,6 +2565,8 @@ const SHOP_ITEMS_CLIENT = [
   { id: 'tag_lendario',    name: 'Lendário',            emoji: '👑', desc: 'Acima de todos',                cost: 1000, rarity: 'lendário', type: 'tag'   },
   { id: 'theme_sakura',    name: 'Sakura',              emoji: '🌸', desc: 'Rosa e branco como as flores de cerejeira do Japão', cost: 50,  rarity: 'raro', type: 'theme', limited: true,
     preview: ['#f472b6','#fda4af','#fdf2f8','#1c1118','#120a0e'] },
+  { id: 'theme_namorados', name: 'Dia dos Namorados',   emoji: '💘', desc: 'Vermelho e dourado para celebrar o amor — 12 de junho', cost: 0, rarity: 'épico', type: 'theme', limited: true,
+    preview: ['#e11d48','#be123c','#fbbf24','#1c0a0e','#0d0507'] },
 ];
 
 const RARITY_CSS = {
@@ -2829,10 +2854,12 @@ function removeSakuraDecoration() {
 }
 
 const THEME_ICONS = {
-  'theme_sakura': '/icon_sakura2.png',
+  'theme_sakura':    '/icon_sakura2.png',
+  'theme_namorados': '/icon_dia_dos_namorados.png',
 };
 const THEME_COLORS = {
-  'theme_sakura': '#f9a8d4',
+  'theme_sakura':    '#f9a8d4',
+  'theme_namorados': '#e11d48',
 };
 const DEFAULT_ICON  = '/icon.png';
 const DEFAULT_COLOR = '#a855f7';
