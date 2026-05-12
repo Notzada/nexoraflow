@@ -2829,7 +2829,7 @@ function removeSakuraDecoration() {
 }
 
 const THEME_ICONS = {
-  'theme_sakura': '/icon-sakura.svg',
+  'theme_sakura': '/icon_sakura2.png',
 };
 const THEME_COLORS = {
   'theme_sakura': '#f9a8d4',
@@ -2841,7 +2841,7 @@ function setThemeIcon(themeId) {
   const iconUrl  = THEME_ICONS[themeId]  || DEFAULT_ICON;
   const color    = THEME_COLORS[themeId] || DEFAULT_COLOR;
   document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')
-    .forEach(el => { el.type = themeId ? 'image/svg+xml' : 'image/png'; el.href = iconUrl; });
+    .forEach(el => { el.type = 'image/png'; el.href = iconUrl; });
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = color;
 }
