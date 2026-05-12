@@ -1445,6 +1445,35 @@ cron.schedule('0 11 * * *', async () => {
 }, { timezone: 'America/Sao_Paulo' });
 
 // ============================================
+// MANIFEST DINÂMICO — retorna ícone conforme o tema ativo
+// ============================================
+app.get('/manifest.json', (req, res) => {
+  const theme = req.query.theme;
+  const THEME_ICONS  = { 'theme_sakura': '/icon_sakura2.png' };
+  const THEME_COLORS = { 'theme_sakura': '#f9a8d4' };
+  const THEME_BG     = { 'theme_sakura': '#120a0e' };
+  const icon  = THEME_ICONS[theme]  || '/icon.png';
+  const color = THEME_COLORS[theme] || '#a855f7';
+  const bg    = THEME_BG[theme]     || '#080c14';
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.json({
+    name: 'NexoraFlow',
+    short_name: 'Nexora',
+    description: 'Finanças, hábitos e rotina com gamificação',
+    start_url: '/',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: bg,
+    theme_color: color,
+    icons: [
+      { src: icon, sizes: '192x192', type: 'image/png' },
+      { src: icon, sizes: '512x512', type: 'image/png' },
+    ]
+  });
+});
+
+// ============================================
 // SERVIR O FRONTEND (index.html na raiz do projeto)
 // ============================================
 app.use(express.static(path.join(__dirname, 'public')));

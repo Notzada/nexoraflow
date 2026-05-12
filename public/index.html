@@ -2841,9 +2841,16 @@ function setThemeIcon(themeId) {
   const iconUrl  = THEME_ICONS[themeId]  || DEFAULT_ICON;
   const color    = THEME_COLORS[themeId] || DEFAULT_COLOR;
   document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')
-    .forEach(el => { el.type = 'image/png'; el.href = iconUrl; });
+    .forEach(el => { el.type = 'image/png'; el.href = iconUrl + '?v=' + Date.now(); });
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = color;
+  // Atualiza manifest dinâmico — ao re-salvar na tela inicial, usa ícone do tema
+  let mlink = document.querySelector('link[rel="manifest"]');
+  if (!mlink) { mlink = document.createElement('link'); mlink.rel = 'manifest'; document.head.appendChild(mlink); }
+  mlink.href = themeId ? '/manifest.json?theme=' + encodeURIComponent(themeId) : '/manifest.json';
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.update()));
+  }
 }
 
 function equipTheme(themeId) {
