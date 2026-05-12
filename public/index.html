@@ -432,11 +432,9 @@ body.theme-namorados .stat-card{border-color:rgba(225,29,72,0.12);}
 body.theme-namorados .profile-hero{border-color:rgba(225,29,72,0.25);}
 body.theme-namorados .modal-box{border-color:rgba(225,29,72,0.2);}
 body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rgba(251,191,36,.3);}
-@keyframes namoradosFloat{0%{transform:translateY(0) rotate(var(--r)) scale(1);}50%{transform:translateY(-18px) rotate(calc(var(--r) + 8deg)) scale(1.08);}100%{transform:translateY(0) rotate(var(--r)) scale(1);}}
-@keyframes namoradosDrift{0%{transform:translateY(0) translateX(0) rotate(var(--r));}33%{transform:translateY(-12px) translateX(6px) rotate(calc(var(--r)+5deg));}66%{transform:translateY(-6px) translateX(-4px) rotate(calc(var(--r)-4deg));}100%{transform:translateY(0) translateX(0) rotate(var(--r));}}
-@keyframes namoradosFall{0%{transform:translateY(-20px) rotate(var(--r));opacity:0;}10%{opacity:var(--op);}90%{opacity:var(--op);}100%{transform:translateY(100vh) rotate(calc(var(--r)+180deg));opacity:0;}}
-@keyframes namoradosGlow{0%,100%{filter:drop-shadow(0 0 4px rgba(225,29,72,.5));}50%{filter:drop-shadow(0 0 12px rgba(251,191,36,.7));}}
-.namorados-deco-el{position:absolute;pointer-events:none;}
+@keyframes namoradosFloat{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-14px) scale(1.05);}}
+@keyframes namoradosSparkle{0%,100%{opacity:0;transform:scale(0.4) rotate(0deg);}40%,60%{opacity:1;transform:scale(1) rotate(45deg);}80%{opacity:0.2;transform:scale(0.7) rotate(80deg);}}
+@keyframes namoradosRise{0%{transform:translateY(0) translateX(0);opacity:0;}8%{opacity:1;}85%{opacity:0.6;}100%{transform:translateY(-105vh) translateX(calc(sin(1) * 30px));opacity:0;}}
 
 /* ======= SIDEBAR — USER WIDGET ======= */
 .user-widget{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:10px;}
@@ -2880,162 +2878,89 @@ function removeSakuraDecoration() {
 }
 
 // ======= DECORAÇÃO DIA DOS NAMORADOS =======
-function getNamedosSVG() {
-  // SVG estático: ramos de rosa + fitas no canto superior-direito
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 820" width="100%" height="100%">
-    <defs>
-      <radialGradient id="rg1" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.9"/>
-        <stop offset="100%" stop-color="#b45309" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <!-- Ramo principal -->
-    <path d="M 500 0 C 470 120 415 230 340 360 C 265 490 155 590 30 790" stroke="#7c1d2e" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.55"/>
-    <!-- Sub-ramos -->
-    <path d="M 430 115 C 465 72 500 38 520 10"  stroke="#7c1d2e" stroke-width="4.5" fill="none" stroke-linecap="round" opacity="0.44"/>
-    <path d="M 400 158 C 432 112 462 76 484 44" stroke="#7c1d2e" stroke-width="3"   fill="none" stroke-linecap="round" opacity="0.36"/>
-    <path d="M 348 255 C 390 216 436 198 472 180" stroke="#7c1d2e" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.40"/>
-    <path d="M 305 318 C 338 282 372 260 396 244" stroke="#7c1d2e" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.34"/>
-    <path d="M 268 375 C 222 338 172 300 140 256" stroke="#7c1d2e" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.40"/>
-    <path d="M 200 440 C 152 408 104 380 68 350" stroke="#7c1d2e" stroke-width="2.8" fill="none" stroke-linecap="round" opacity="0.34"/>
-    <!-- Rosas nos nós -->
-    ${rosa(500,12,11,'#e11d48','#be123c','#fbbf24')}
-    ${rosa(520,12,9,'#f43f5e','#e11d48','#fbbf24')}
-    ${rosa(472,180,8.5,'#e11d48','#9f1239','#fbbf24')}
-    ${rosa(396,244,8,'#f43f5e','#be123c','#fbbf24')}
-    ${rosa(340,360,9.5,'#e11d48','#9f1239','#fbbf24')}
-    ${rosa(140,256,8,'#f43f5e','#be123c','#fbbf24')}
-    ${rosa(68,350,7.5,'#e11d48','#be123c','#fbbf24')}
-    ${rosa(484,44,8,'#f43f5e','#9f1239','#fbbf24')}
-    ${rosa(430,115,7.5,'#e11d48','#be123c','#fbbf24')}
-    <!-- Corações espalhados -->
-    ${corSVG(80,155,9,'#e11d48',0.32)}
-    ${corSVG(210,60,8,'#fbbf24',0.28)}
-    ${corSVG(445,365,9,'#f43f5e',0.28)}
-    ${corSVG(168,595,7.5,'#e11d48',0.20)}
-    ${corSVG(48,238,8,'#fbbf24',0.26)}
-    ${corSVG(320,495,8,'#f43f5e',0.22)}
-    ${corSVG(350,132,7,'#e11d48',0.22)}
-    ${corSVG(480,262,8,'#fbbf24',0.20)}
-    <!-- Pétalas de rosa soltas -->
-    <ellipse cx="78"  cy="158" rx="4" ry="7"   fill="#e11d48" opacity="0.28" transform="rotate(28,78,158)"/>
-    <ellipse cx="208" cy="56"  rx="3.5" ry="6" fill="#f43f5e" opacity="0.24" transform="rotate(-22,208,56)"/>
-    <ellipse cx="442" cy="362" rx="4" ry="6.5" fill="#fbbf24" opacity="0.22" transform="rotate(48,442,362)"/>
-    <ellipse cx="166" cy="592" rx="3.5" ry="5.5" fill="#e11d48" opacity="0.18" transform="rotate(-18,166,592)"/>
-    <ellipse cx="44"  cy="236" rx="3.5" ry="5.5" fill="#f43f5e" opacity="0.22" transform="rotate(62,44,236)"/>
-    <ellipse cx="318" cy="492" rx="4" ry="6.5" fill="#e11d48" opacity="0.18" transform="rotate(-32,318,492)"/>
-    <ellipse cx="348" cy="130" rx="3.5" ry="6" fill="#fbbf24" opacity="0.20" transform="rotate(-30,348,130)"/>
-    <ellipse cx="478" cy="260" rx="4" ry="6"   fill="#f43f5e" opacity="0.18" transform="rotate(-15,478,260)"/>
-  </svg>`;
-}
-
-function corSVG(cx, cy, r, fill, op) {
-  // Coração SVG via path normalizado, centralizado em (cx,cy) com raio r
-  const s = r / 10;
-  return `<path transform="translate(${cx},${cy}) scale(${s}) translate(-10,-9)"
-    d="M10,6 C10,3.8 8.2,2 6,2 C4.4,2 3,2.9 2.3,4.2 C1.6,2.9 0.2,2 -1.4,2 C-3.6,2 -5.4,3.8 -5.4,6 C-5.4,9.5 10,18 10,18 C10,18 10,18 10,18 C10,18 25.4,9.5 25.4,6 C25.4,3.8 23.6,2 21.4,2 C19.8,2 18.4,2.9 17.7,4.2 C17,2.9 15.6,2 14,2 C11.8,2 10,3.8 10,6Z"
-    fill="${fill}" opacity="${op}"/>`;
-}
-
-function rosa(cx, cy, r, c1, c2, cen) {
-  // Rosa estilizada com pétalas em camadas
-  const petals = [];
-  for (let i = 0; i < 5; i++) {
-    const a = (i * 72) * Math.PI / 180;
-    const px = cx + Math.cos(a) * r * 0.9;
-    const py = cy + Math.sin(a) * r * 0.9;
-    petals.push(`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${(r*0.7).toFixed(1)}" ry="${(r*0.5).toFixed(1)}" fill="${c1}" opacity="0.82" transform="rotate(${(i*72).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`);
-  }
-  for (let i = 0; i < 5; i++) {
-    const a = (i * 72 + 36) * Math.PI / 180;
-    const px = cx + Math.cos(a) * r * 0.55;
-    const py = cy + Math.sin(a) * r * 0.55;
-    petals.push(`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${(r*0.55).toFixed(1)}" ry="${(r*0.38).toFixed(1)}" fill="${c2}" opacity="0.88" transform="rotate(${(i*72+36).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`);
-  }
-  petals.push(`<circle cx="${cx}" cy="${cy}" r="${(r*0.3).toFixed(1)}" fill="${cen}" opacity="0.92"/>`);
-  return petals.join('');
-}
+// Conceito: véu de luz vermelha nas bordas + grandes corações translúcidos
+// pulsando no fundo + faíscas douradas cintilando — sem galhos, diferente do Sakura.
 
 function addNamedosDecoration() {
   if (document.getElementById('namorados-deco')) return;
   const isMobile = window.innerWidth <= 768;
+  const root = document.createElement('div');
+  root.id = 'namorados-deco';
+  root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;';
 
-  // Painel fixo com SVG de ramos (canto superior-direito)
-  const el1 = document.createElement('div');
-  el1.id = 'namorados-deco';
-  el1.style.cssText = `position:fixed;top:0;right:0;width:${isMobile?'65vw':'min(640px,50vw)'};height:${isMobile?'72vh':'min(880px,96vh)'};pointer-events:none;z-index:0;overflow:hidden;opacity:${isMobile?'0.38':'0.44'};`;
-  el1.innerHTML = getNamedosSVG();
-  document.body.appendChild(el1);
+  // ── 1. Véu de luz: gradiente radial vermelho nas bordas (vignette romântica)
+  const veil = document.createElement('div');
+  veil.style.cssText = `position:absolute;inset:0;background:
+    radial-gradient(ellipse 70% 55% at 0% 0%,   rgba(159,18,57,0.28) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 55% at 100% 0%,  rgba(159,18,57,0.22) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 55% at 100% 100%,rgba(159,18,57,0.28) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 55% at 0% 100%,  rgba(159,18,57,0.22) 0%, transparent 65%);`;
+  root.appendChild(veil);
 
-  if (!isMobile) {
-    const el2 = document.createElement('div');
-    el2.id = 'namorados-deco-2';
-    el2.style.cssText = 'position:fixed;bottom:0;left:0;width:min(520px,42vw);height:min(760px,86vh);pointer-events:none;z-index:0;overflow:hidden;opacity:0.28;transform:scale(-1,-1);transform-origin:50% 50%;';
-    el2.innerHTML = getNamedosSVG();
-    document.body.appendChild(el2);
-  }
-
-  // Corações flutuantes animados espalhados pelo fundo
-  const container = document.createElement('div');
-  container.id = 'namorados-hearts';
-  container.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;';
-
-  const heartConfigs = [
-    // [left%, top%, size, delayS, durationS, opacity, rotate]
-    [8,  12, 18, 0,   5.2, 0.18, -15],
-    [82, 18, 14, 1.2, 6.0, 0.14,  12],
-    [18, 70, 12, 0.6, 4.8, 0.14, -8 ],
-    [88, 72, 16, 2.0, 5.6, 0.16,  20],
-    [50, 8,  10, 0.4, 4.4, 0.12, -6 ],
-    [38, 85, 11, 1.8, 5.0, 0.12,  10],
-    [65, 55, 9,  0.9, 4.2, 0.10, -18],
-    [5,  45, 13, 2.4, 6.2, 0.13,  8 ],
-    [73, 38, 8,  1.5, 4.6, 0.10, -12],
-    [28, 30, 10, 3.0, 5.8, 0.11,  15],
-    // mobile tem menos
+  // ── 2. Grandes corações translúcidos no fundo (silhuetas pulsando lentamente)
+  const heartPath = 'M50,30 C50,18 38,8 25,8 C12,8 0,18 0,30 C0,52 50,75 50,75 C50,75 100,52 100,30 C100,18 88,8 75,8 C62,8 50,18 50,30Z';
+  // [left%, top%, sizePx, delayS, durationS, opacity, color]
+  const bigHearts = [
+    [-8,  -6,  isMobile?160:220, 0,   7.0, 0.055, '#9f1239'],
+    [72,  -4,  isMobile?130:180, 1.5, 8.2, 0.045, '#fbbf24'],
+    [-5,  58,  isMobile?110:160, 0.8, 6.5, 0.045, '#be123c'],
+    [76,  62,  isMobile?140:195, 2.2, 7.8, 0.050, '#9f1239'],
+    [30,  30,  isMobile?200:280, 3.0, 9.0, 0.030, '#7c1d2e'],
     ...(isMobile ? [] : [
-      [92, 40, 11, 0.8, 4.9, 0.10, -5 ],
-      [14, 55, 9,  2.2, 5.3, 0.09,  22],
-      [58, 78, 12, 1.4, 5.1, 0.11, -10],
-      [44, 22, 8,  3.5, 4.7, 0.09,  18],
-      [76, 88, 10, 2.8, 6.0, 0.08, -20],
+      [88,  28,  120, 1.0, 6.8, 0.040, '#fbbf24'],
+      [-4,  30,  100, 2.5, 7.4, 0.035, '#be123c'],
     ]),
   ];
-
-  heartConfigs.forEach(([l, t, sz, delay, dur, op, rot]) => {
-    const el = document.createElement('div');
-    el.className = 'namorados-deco-el';
-    el.style.cssText = `left:${l}%;top:${t}%;width:${sz}px;height:${sz}px;--r:${rot}deg;--op:${op};animation:namoradosFloat ${dur}s ease-in-out ${delay}s infinite;opacity:${op};`;
-    el.innerHTML = `<svg viewBox="0 0 20 18" width="${sz}" height="${sz}" xmlns="http://www.w3.org/2000/svg">
-      <path d="M10,5.5 C10,3.6 8.4,2 6.5,2 C4.6,2 3,3.6 3,5.5 C3,8.5 10,15 10,15 C10,15 17,8.5 17,5.5 C17,3.6 15.4,2 13.5,2 C11.6,2 10,3.6 10,5.5Z" fill="${Math.random()>.5?'#e11d48':'#fbbf24'}" opacity="0.9"/>
+  bigHearts.forEach(([l, t, sz, delay, dur, op, col]) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = `position:absolute;left:${l}%;top:${t}%;width:${sz}px;height:${sz*0.75}px;animation:namoradosFloat ${dur}s ease-in-out ${delay}s infinite;opacity:${op};`;
+    wrap.innerHTML = `<svg viewBox="0 0 100 75" width="${sz}" height="${sz*0.75}" xmlns="http://www.w3.org/2000/svg">
+      <path d="${heartPath}" fill="${col}"/>
     </svg>`;
-    container.appendChild(el);
+    root.appendChild(wrap);
   });
 
-  // Pétalas caindo
-  const petalColors = ['#e11d48','#f43f5e','#fbbf24','#be123c','#fca5a5'];
-  for (let i = 0; i < (isMobile ? 8 : 14); i++) {
-    const el = document.createElement('div');
-    el.className = 'namorados-deco-el';
-    const l = Math.random() * 96;
-    const sz = 5 + Math.random() * 7;
-    const dur = 8 + Math.random() * 10;
-    const delay = Math.random() * 12;
-    const rot = -40 + Math.random() * 80;
-    const col = petalColors[Math.floor(Math.random() * petalColors.length)];
-    const op = 0.15 + Math.random() * 0.18;
-    el.style.cssText = `left:${l.toFixed(1)}%;top:-20px;--r:${rot.toFixed(0)}deg;--op:${op.toFixed(2)};animation:namoradosFall ${dur.toFixed(1)}s linear ${delay.toFixed(1)}s infinite;`;
-    el.innerHTML = `<svg viewBox="0 0 12 18" width="${sz.toFixed(0)}" height="${(sz*1.5).toFixed(0)}" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="6" cy="9" rx="4.5" ry="7.5" fill="${col}" opacity="0.9"/>
+  // ── 3. Faíscas douradas cintilando (estrelinhas de 4 pontas)
+  const sparkCount = isMobile ? 18 : 32;
+  const star4 = (s) => `M0,-${s} L${s*0.22},-${s*0.22} L${s},0 L${s*0.22},${s*0.22} L0,${s} L-${s*0.22},${s*0.22} L-${s},0 L-${s*0.22},-${s*0.22}Z`;
+  for (let i = 0; i < sparkCount; i++) {
+    const l    = 2 + Math.random() * 96;
+    const t    = 2 + Math.random() * 96;
+    const sz   = 3 + Math.random() * 5;
+    const dur  = 2.5 + Math.random() * 3.5;
+    const delay= Math.random() * 5;
+    const col  = Math.random() > 0.35 ? '#fbbf24' : '#fca5a5';
+    const op   = 0.5 + Math.random() * 0.5;
+    const sp = document.createElement('div');
+    sp.style.cssText = `position:absolute;left:${l.toFixed(1)}%;top:${t.toFixed(1)}%;animation:namoradosSparkle ${dur.toFixed(1)}s ease-in-out ${delay.toFixed(1)}s infinite;opacity:0;`;
+    sp.innerHTML = `<svg viewBox="-${sz} -${sz} ${sz*2} ${sz*2}" width="${sz*2}" height="${sz*2}" xmlns="http://www.w3.org/2000/svg">
+      <path d="${star4(sz)}" fill="${col}" opacity="${op}"/>
     </svg>`;
-    container.appendChild(el);
+    root.appendChild(sp);
   }
 
-  document.body.appendChild(container);
+  // ── 4. Corações pequenos subindo (soltados de baixo, como balões)
+  const riseCount = isMobile ? 6 : 10;
+  for (let i = 0; i < riseCount; i++) {
+    const l    = 5 + Math.random() * 90;
+    const sz   = 10 + Math.random() * 14;
+    const dur  = 9 + Math.random() * 8;
+    const delay= Math.random() * 14;
+    const col  = Math.random() > 0.5 ? '#e11d48' : '#fbbf24';
+    const op   = 0.12 + Math.random() * 0.14;
+    const el = document.createElement('div');
+    el.style.cssText = `position:absolute;left:${l.toFixed(1)}%;bottom:-30px;animation:namoradosRise ${dur.toFixed(1)}s ease-in ${delay.toFixed(1)}s infinite;opacity:${op};`;
+    el.innerHTML = `<svg viewBox="0 0 20 18" width="${sz}" height="${sz}" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10,5.5 C10,3.6 8.4,2 6.5,2 C4.6,2 3,3.6 3,5.5 C3,8.5 10,15 10,15 C10,15 17,8.5 17,5.5 C17,3.6 15.4,2 13.5,2 C11.6,2 10,3.6 10,5.5Z" fill="${col}"/>
+    </svg>`;
+    root.appendChild(el);
+  }
+
+  document.body.appendChild(root);
 }
 
 function removeNamedosDecoration() {
-  ['namorados-deco','namorados-deco-2','namorados-hearts'].forEach(id => { const e = document.getElementById(id); if(e) e.remove(); });
+  const e = document.getElementById('namorados-deco'); if(e) e.remove();
 }
 
 const THEME_ICONS = {
