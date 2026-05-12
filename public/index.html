@@ -2164,13 +2164,16 @@ async function loadDashboard() {
   const byCat = expenses.filter(e=>e.category!=='Renda').reduce((acc,e)=>{ acc[e.category]=(acc[e.category]||0)+parseFloat(e.amount); return acc; },{});
   const catKeys = Object.keys(byCat);
   const catVals = catKeys.map(k=>byCat[k]);
-  const catCols = catKeys.map(k=>getCatColor(k));
+  const ct = getChartTheme();
+  const catCols = ct.pie
+    ? catKeys.map((_,i) => ct.pie[i % ct.pie.length])
+    : catKeys.map(k=>getCatColor(k));
 
   if(pieChart) pieChart.destroy();
   if(catKeys.length > 0) {
     pieChart = new Chart(document.getElementById('pieChart'),{
       type:'doughnut',
-      data:{labels:catKeys,datasets:[{data:catVals,backgroundColor:catCols,borderWidth:2,borderColor:'#161719'}]},
+      data:{labels:catKeys,datasets:[{data:catVals,backgroundColor:catCols,borderWidth:2,borderColor:ct.border}]},
       options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}
     });
     document.getElementById('pie-legend').innerHTML = catKeys.map((k,i)=>
@@ -2255,10 +2258,11 @@ async function renderBarChart(expenses) {
   if(barChart) barChart.destroy();
   const canvas = document.getElementById('barChart');
   const ctx2d = canvas.getContext('2d');
+  const ct = getChartTheme();
   const grad = ctx2d.createLinearGradient(0, 0, 0, 200);
-  grad.addColorStop(0,   'rgba(168,85,247,0.55)');
-  grad.addColorStop(0.5, 'rgba(0,212,255,0.15)');
-  grad.addColorStop(1,   'rgba(168,85,247,0)');
+  grad.addColorStop(0,   ct.gradTop);
+  grad.addColorStop(0.5, ct.gradMid);
+  grad.addColorStop(1,   ct.gradBot);
 
   barChart = new Chart(canvas, {
     type: 'line',
@@ -2268,9 +2272,9 @@ async function renderBarChart(expenses) {
         data: totals,
         fill: true,
         backgroundColor: grad,
-        borderColor: '#00d4ff',
+        borderColor: ct.line,
         borderWidth: 2,
-        pointBackgroundColor: '#00d4ff',
+        pointBackgroundColor: ct.line,
         pointRadius: 3,
         pointHoverRadius: 5,
         tension: 0.4
@@ -2284,11 +2288,46 @@ async function renderBarChart(expenses) {
         tooltip: { callbacks: { label: ctx => 'R$' + ctx.raw.toFixed(2) } }
       },
       scales: {
-        x: { ticks: { color: '#6b6f78', font: { size: 9 } }, grid: { display: false } },
-        y: { ticks: { color: '#6b6f78', font: { size: 9 }, callback: v => 'R$' + v }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+        x: { ticks: { color: ct.tick, font: { size: 9 } }, grid: { display: false } },
+        y: { ticks: { color: ct.tick, font: { size: 9 }, callback: v => 'R$' + v }, grid: { color: ct.grid }, beginAtZero: true }
       }
     }
   });
+}
+
+function getChartTheme() {
+  const theme = localStorage.getItem('nexora_active_theme');
+  if (theme === 'theme_sakura') return {
+    line:    '#f472b6',
+    gradTop: 'rgba(236,72,153,0.50)',
+    gradMid: 'rgba(249,168,212,0.15)',
+    gradBot: 'rgba(236,72,153,0)',
+    tick:    '#a07080',
+    grid:    'rgba(249,168,212,0.07)',
+    pie:     ['#f472b6','#fda4af','#fb7185','#e879f9','#c084fc','#f9a8d4','#fecdd3','#be185d'],
+    border:  '#1a1020',
+  };
+  if (theme === 'theme_namorados') return {
+    line:    '#fbbf24',
+    gradTop: 'rgba(225,29,72,0.55)',
+    gradMid: 'rgba(251,191,36,0.18)',
+    gradBot: 'rgba(225,29,72,0)',
+    tick:    '#a06070',
+    grid:    'rgba(251,191,36,0.07)',
+    pie:     ['#e11d48','#fbbf24','#f43f5e','#f59e0b','#be123c','#fca5a5','#b45309','#9f1239'],
+    border:  '#1a0810',
+  };
+  // padrão (roxo/cyan)
+  return {
+    line:    '#00d4ff',
+    gradTop: 'rgba(168,85,247,0.55)',
+    gradMid: 'rgba(0,212,255,0.15)',
+    gradBot: 'rgba(168,85,247,0)',
+    tick:    '#6b6f78',
+    grid:    'rgba(255,255,255,0.05)',
+    pie:     null,
+    border:  '#161719',
+  };
 }
 
 async function loadHabits() {
@@ -3009,6 +3048,8 @@ function equipTheme(themeId) {
   }
   setThemeIcon(themeId || null);
   loadShop();
+  // Re-renderiza gráficos com cores do novo tema
+  if (document.getElementById('page-dashboard')?.style.display !== 'none') loadDashboard();
   if (themeId) {
     setTimeout(() => showToast('🏠 Para atualizar o ícone na tela inicial, remova e adicione o app novamente'), 600);
   }
