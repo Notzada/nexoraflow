@@ -1521,6 +1521,10 @@ function showScreen(name) {
 }
 
 window.addEventListener('load', async () => {
+  // Captura código de referral da URL (?ref=CODIGO)
+  const refParam = new URLSearchParams(window.location.search).get('ref');
+  if (refParam) localStorage.setItem('nexora_ref', refParam.toUpperCase().trim());
+
   supabaseClient = supabase.createClient(AUTO_URL, AUTO_KEY);
   showScreen('auth'); // começa na tela de auth
   const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1601,6 +1605,23 @@ async function createProfile() {
     .select().single();
   if (error) { errEl.textContent = error.message.includes('unique') ? 'Este nome já está em uso.' : 'Erro ao criar perfil.'; return; }
   currentProfile = data;
+
+  // Aplica referral se veio de convite
+  const refCode = localStorage.getItem('nexora_ref');
+  if (refCode) {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const resp = await fetch('/api/referral/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ code: refCode }),
+    });
+    const result = await resp.json();
+    if (result.ok) {
+      localStorage.removeItem('nexora_ref');
+      showToast(`🎉 Bem-vindo! Você ganhou +${result.bonus} NexoCoins por entrar pelo convite!`);
+    }
+  }
+
   startApp();
 }
 
@@ -3901,8 +3922,16 @@ async function loadEvents() {
   const el = document.getElementById('events-list');
   el.innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
 
-  const { data: events } = await supabaseClient.from('events').select('*').eq('active', true).order('created_at', { ascending: false });
-  if (!events || !events.length) {
+  // Carrega evento permanente de referral em paralelo com eventos do DB
+  const [eventsRes, referralRes] = await Promise.all([
+    supabaseClient.from('events').select('*').eq('active', true).order('created_at', { ascending: false }),
+    loadReferralEventCard(),
+  ]);
+
+  const { data: events } = eventsRes;
+  const referralCard = referralRes;
+
+  if ((!events || !events.length) && !referralCard) {
     el.innerHTML = '<div class="empty">Nenhum evento ativo no momento. Volte em breve! 🎪</div>';
     return;
   }
@@ -3988,7 +4017,76 @@ async function loadEvents() {
     </div>`;
   }).filter(Boolean).join('');
 
-  el.innerHTML = cards || '<div class="empty">Nenhum evento ativo no momento. Volte em breve! 🎪</div>';
+  el.innerHTML = (referralCard || '') + (cards || '');
+  if (!referralCard && !cards) el.innerHTML = '<div class="empty">Nenhum evento ativo no momento. Volte em breve! 🎪</div>';
+}
+
+async function loadReferralEventCard() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) return '';
+  try {
+    const res = await fetch('/api/referral/stats', { headers: { 'Authorization': 'Bearer ' + session.access_token } });
+    if (!res.ok) return '';
+    const { count, referralCode, milestones, newRewards } = await res.json();
+
+    // Mostra recompensas novas
+    for (const r of (newRewards || [])) {
+      showToast(`🎉 Conquista desbloqueada: ${r.name}! +${r.coins} coins`);
+    }
+
+    const shareUrl = `${location.origin}?ref=${referralCode}`;
+    const milestoneHTML = milestones.map(m => {
+      const reached = count >= m.needed;
+      const color = m.rewarded ? '#22c55e' : reached ? '#f5a623' : 'var(--muted)';
+      const icon = m.rewarded ? '✓' : reached ? '!' : m.needed;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;border:1px solid ${m.rewarded?'rgba(34,197,94,.3)':reached?'rgba(245,166,35,.3)':'var(--border)'};background:${m.rewarded?'rgba(34,197,94,.05)':reached?'rgba(245,166,35,.05)':'rgba(255,255,255,.02)'};margin-bottom:8px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:${color}22;border:1px solid ${color}44;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:11px;font-weight:700;color:${color};flex-shrink:0">${icon}</div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-display);font-size:11px;font-weight:700;color:${color}">${m.name} — ${m.needed} amigo${m.needed>1?'s':''}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">+${m.coins} coins · +${m.xp} XP${m.tag?' · Tag exclusiva 🫂':''}</div>
+        </div>
+        ${m.rewarded?`<span style="font-size:9px;font-family:var(--font-display);font-weight:700;color:#22c55e;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);padding:3px 7px;border-radius:5px">RECEBIDO</span>`:''}
+      </div>`;
+    }).join('');
+
+    const progress = Math.min(count, 5);
+    const pct = (progress / 5) * 100;
+
+    return `<div class="event-card" style="border-color:rgba(168,85,247,.3);background:linear-gradient(135deg,rgba(168,85,247,.05),rgba(0,212,255,.03));">
+      <div class="event-banner" style="background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(0,212,255,.08));">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="font-size:22px">👥</span>
+          <div>
+            <div class="event-title" style="margin:0">Traga seu Bonde</div>
+            <div style="font-size:10px;color:var(--accent);font-family:var(--font-display);font-weight:700;letter-spacing:.5px">EVENTO PERMANENTE</div>
+          </div>
+        </div>
+        <div class="event-desc">Convide amigos para o NexoraFlow usando seu link exclusivo e desbloqueie recompensas progressivas. Quanto mais amigos, maior o prêmio!</div>
+        <div style="margin-top:14px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px;font-family:var(--font-display)">
+            <span>${count} amigo${count!==1?'s':''} convidado${count!==1?'s':''}</span><span>5 para Fundador 🫂</span>
+          </div>
+          <div style="height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--accent),#00d4ff);border-radius:3px;transition:width .5s"></div>
+          </div>
+        </div>
+      </div>
+      <div class="event-steps">
+        ${milestoneHTML}
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:8px;font-family:var(--font-display);font-weight:700">SEU LINK DE CONVITE</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="flex:1;font-size:11px;color:var(--text);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${shareUrl}</div>
+            <button class="event-step-btn submit" onclick="copyReferralLink('${shareUrl}')" style="white-space:nowrap;padding:8px 14px">📋 Copiar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  } catch(e) { return ''; }
+}
+
+function copyReferralLink(url) {
+  navigator.clipboard.writeText(url).then(() => showToast('✅ Link copiado! Manda para seus amigos 🫂'));
 }
 
 function openEventSubmit(eventId, step, label) {

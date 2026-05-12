@@ -1358,6 +1358,73 @@ app.post('/api/categories', express.json(), async (req, res) => {
 });
 
 // ============================================
+// REFERRAL — Traga seu Bonde
+// ============================================
+const REFERRAL_MILESTONES = [
+  { id: 'referral_1', needed: 1, coins: 50,  xp: 30,  name: 'Recrutador' },
+  { id: 'referral_3', needed: 3, coins: 150, xp: 75,  name: 'Influencer' },
+  { id: 'referral_5', needed: 5, coins: 500, xp: 200, name: 'Fundador',  tag: 'tag_fundador' },
+];
+
+app.get('/api/referral/stats', async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { data: profile } = await supabaseAdmin.from('user_profiles').select('referral_code').eq('id', user.id).single();
+  const { count } = await supabaseAdmin.from('user_profiles').select('id', { count: 'exact', head: true }).eq('referred_by', user.id);
+
+  // Conquistas já concedidas
+  const milestoneIds = REFERRAL_MILESTONES.map(m => m.id);
+  const { data: granted } = await supabaseAdmin.from('user_achievements').select('achievement_id').eq('user_id', user.id).in('achievement_id', milestoneIds);
+  const grantedIds = new Set((granted || []).map(g => g.achievement_id));
+
+  // Concede novos milestones atingidos
+  const newRewards = [];
+  for (const m of REFERRAL_MILESTONES) {
+    if ((count || 0) >= m.needed && !grantedIds.has(m.id)) {
+      await supabaseAdmin.from('user_achievements').insert({ user_id: user.id, achievement_id: m.id });
+      await addCoins(supabaseAdmin, user.id, m.coins, `Conquista: ${m.name}`);
+      await addXP(supabaseAdmin, user.id, m.xp, `Conquista: ${m.name}`);
+      if (m.tag) await supabaseAdmin.from('user_profiles').update({ active_tag: m.tag }).eq('id', user.id);
+      grantedIds.add(m.id);
+      newRewards.push(m);
+    }
+  }
+
+  res.json({
+    count: count || 0,
+    referralCode: profile?.referral_code || '',
+    milestones: REFERRAL_MILESTONES.map(m => ({ ...m, rewarded: grantedIds.has(m.id) })),
+    newRewards,
+  });
+});
+
+// Aplicar referral ao criar perfil
+app.post('/api/referral/apply', express.json(), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'Código inválido' });
+
+  const { data: referrer } = await supabaseAdmin.from('user_profiles').select('id').eq('referral_code', code.toUpperCase().trim()).single();
+  if (!referrer || referrer.id === user.id) return res.json({ ok: false });
+
+  // Checa se já tem referred_by
+  const { data: me } = await supabaseAdmin.from('user_profiles').select('referred_by').eq('id', user.id).single();
+  if (me?.referred_by) return res.json({ ok: false, reason: 'Já possui indicação.' });
+
+  await supabaseAdmin.from('user_profiles').update({ referred_by: referrer.id }).eq('id', user.id);
+  // Bônus para o novo usuário
+  await addCoins(supabaseAdmin, user.id, 30, 'Bônus de boas-vindas por indicação');
+  res.json({ ok: true, bonus: 30 });
+});
+
+// ============================================
 // PUSH NOTIFICATIONS
 // ============================================
 app.get('/api/push/vapid-key', (req, res) => {
@@ -1384,6 +1451,34 @@ app.post('/api/push/unsubscribe', express.json(), async (req, res) => {
   const { endpoint } = req.body;
   if (endpoint) await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', endpoint);
   res.json({ ok: true });
+});
+
+app.post('/api/push/broadcast', express.json(), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user || user.email !== 'pintodiego52@gmail.com') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const { title = 'NexoraFlow', body = 'Mensagem de teste!' } = req.body;
+  const { data: subs } = await supabaseAdmin.from('push_subscriptions').select('subscription, endpoint');
+  if (!subs || subs.length === 0) return res.json({ sent: 0 });
+
+  const payload = JSON.stringify({ title, body });
+  let sent = 0;
+  for (const row of subs) {
+    try {
+      await webpush.sendNotification(row.subscription, payload);
+      sent++;
+    } catch (err) {
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', row.endpoint);
+      }
+    }
+  }
+  console.log(`[PUSH BROADCAST] "${title}" enviado para ${sent} subscriptions.`);
+  res.json({ sent });
 });
 
 // Envia notificação para um usuário específico

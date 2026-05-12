@@ -34,6 +34,11 @@ const ACHIEVEMENTS = [
   { id: 'balanced_day',   name: 'Equilibrado',             desc: 'Gasto + hábito + tarefa no mesmo dia',  xp: 25,  coins: 15,  category: 'avancado'     },
   { id: 'multitasker',    name: 'Multitasker',             desc: 'Usou todas as features em 1 semana',    xp: 50,  coins: 30,  category: 'avancado'     },
   { id: 'nexora_legend',  name: 'Lenda Nexora',            desc: 'Nível 5+ com 10+ conquistas',           xp: 300, coins: 200, category: 'avancado'     },
+
+  // 👥 Referral — Traga seu Bonde
+  { id: 'referral_1',     name: 'Recrutador',              desc: 'Convidou 1 amigo para o NexoraFlow',    xp: 30,  coins: 50,  category: 'social'       },
+  { id: 'referral_3',     name: 'Influencer',              desc: 'Convidou 3 amigos para o NexoraFlow',   xp: 75,  coins: 150, category: 'social'       },
+  { id: 'referral_5',     name: 'Fundador',                desc: 'Convidou 5 amigos para o NexoraFlow',   xp: 200, coins: 500, category: 'social'       },
 ];
 
 function getWeekStart() {
