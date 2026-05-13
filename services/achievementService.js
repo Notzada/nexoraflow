@@ -39,6 +39,26 @@ const ACHIEVEMENTS = [
   { id: 'referral_1',     name: 'Recrutador',              desc: 'Convidou 1 amigo para o NexoraFlow',    xp: 30,  coins: 50,  category: 'social'       },
   { id: 'referral_3',     name: 'Influencer',              desc: 'Convidou 3 amigos para o NexoraFlow',   xp: 75,  coins: 150, category: 'social'       },
   { id: 'referral_5',     name: 'Fundador',                desc: 'Convidou 5 amigos para o NexoraFlow',   xp: 200, coins: 500, category: 'social'       },
+
+  // 📅 Login Diário
+  { id: 'login_7',        name: 'Pontual',                 desc: '7 dias de login seguidos',              xp: 25,  coins: 15,  category: 'login'        },
+  { id: 'login_15',       name: 'Disciplinado',            desc: '15 dias de login seguidos',             xp: 50,  coins: 30,  category: 'login'        },
+
+  // 🛒 Loja
+  { id: 'first_purchase',  name: 'Primeira Compra',        desc: 'Comprou um item na loja',               xp: 20,  coins: 10,  category: 'loja'         },
+  { id: 'theme_owner',     name: 'Colecionador',           desc: 'Possui pelo menos 1 tema na loja',      xp: 30,  coins: 20,  category: 'loja'         },
+
+  // 💰 Coins
+  { id: 'coins_500',       name: 'Cofre Cheio',            desc: 'Acumulou 500 coins ao longo do tempo',  xp: 40,  coins: 0,   category: 'coins'        },
+
+  // 💳 Pagamentos
+  { id: 'paid_10',         name: 'Dia de Pagar',           desc: 'Marcou 10 gastos como pagos',           xp: 25,  coins: 15,  category: 'financas'     },
+
+  // 🔔 Notificações
+  { id: 'notif_enabled',   name: 'Sempre Atento',          desc: 'Ativou as notificações push',           xp: 10,  coins: 10,  category: 'sistema'      },
+
+  // ⚡ Eventos
+  { id: 'event_participated', name: 'Participante',        desc: 'Participou de um evento no NexoraFlow', xp: 20,  coins: 10,  category: 'eventos'      },
 ];
 
 function getWeekStart() {
@@ -91,6 +111,12 @@ async function checkAndGrantAchievements(db, userId, addXPFn, addCoinsFn) {
     { count: recentHabits },
     { count: recentTasks },
     { data: weeklyRanking },
+    { data: dailyLoginHistory },
+    { data: purchases },
+    { count: paidExpenses },
+    { count: pushSubs },
+    { count: eventParticipations },
+    { data: coinLogs },
   ] = await Promise.all([
     db.from('expenses').select('id', { count: 'exact', head: true }).eq('user_id', userId).neq('category', 'Renda'),
     db.from('tasks').select('id', { count: 'exact', head: true }).eq('user_id', userId),
@@ -104,11 +130,22 @@ async function checkAndGrantAchievements(db, userId, addXPFn, addCoinsFn) {
     db.from('habit_logs').select('id', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', sevenDaysAgo),
     db.from('tasks').select('id', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', sevenDaysAgo),
     db.from('weekly_xp').select('user_id, xp').eq('week_start', weekStart).order('xp', { ascending: false }),
+    db.from('daily_logins').select('streak_day').eq('user_id', userId).order('login_date', { ascending: false }).limit(1),
+    db.from('user_purchases').select('item_id').eq('user_id', userId),
+    db.from('expenses').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('paid', true),
+    db.from('push_subscriptions').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    db.from('event_submissions').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    db.from('coin_logs').select('amount').eq('user_id', userId).gt('amount', 0),
   ]);
 
   const hasCompletedGoal = (allGoals || []).some(g => Number(g.current) >= Number(g.target));
   const balancedToday = (todayExpenses?.length > 0) && (todayHabits?.length > 0) && (todayDoneTasks?.length > 0);
   const usedAllFeatures = recentExpenses > 0 && recentHabits > 0 && recentTasks > 0 && totalGoals > 0;
+
+  const currentLoginStreak = (dailyLoginHistory && dailyLoginHistory[0]?.streak_day) || 0;
+  const ownedItems = new Set((purchases || []).map(p => p.item_id));
+  const hasTheme = (purchases || []).some(p => p.item_id.startsWith('theme_'));
+  const totalCoinsEarned = (coinLogs || []).reduce((sum, l) => sum + (l.amount || 0), 0);
 
   let userRank = 999;
   if (weeklyRanking) {
@@ -132,9 +169,18 @@ async function checkAndGrantAchievements(db, userId, addXPFn, addCoinsFn) {
     ranking_up:     userRank <= 10,
     active_7:       (profile.streak || 0) >= 7,
     active_30:      (profile.streak || 0) >= 30,
-    balanced_day:   balancedToday,
-    multitasker:    usedAllFeatures,
-    nexora_legend:  (profile.level || 1) >= 5 && unlockedCount >= 10,
+    balanced_day:        balancedToday,
+    multitasker:         usedAllFeatures,
+    nexora_legend:       (profile.level || 1) >= 5 && unlockedCount >= 10,
+
+    login_7:             currentLoginStreak >= 7,
+    login_15:            currentLoginStreak >= 15,
+    first_purchase:      ownedItems.size > 0,
+    theme_owner:         hasTheme,
+    coins_500:           totalCoinsEarned >= 500,
+    paid_10:             (paidExpenses || 0) >= 10,
+    notif_enabled:       (pushSubs || 0) > 0,
+    event_participated:  (eventParticipations || 0) > 0,
   };
 
   const newlyUnlocked = [];
