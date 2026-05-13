@@ -1522,7 +1522,7 @@ app.post('/api/admin/notify', requireAdmin, express.json(), async (req, res) => 
 
 // Verificação retroativa de conquistas para todos os usuários
 app.post('/api/admin/check-achievements', requireAdmin, async (req, res) => {
-  const { data: users } = await supabaseAdmin.from('user_profiles').select('id, telegram_chat_id');
+  const { data: users } = await supabaseAdmin.from('user_profiles').select('id, username, telegram_chat_id');
   if (!users || users.length === 0) return res.json({ processed: 0, totalGranted: 0 });
 
   let totalGranted = 0;
@@ -1538,7 +1538,7 @@ app.post('/api/admin/check-achievements', requireAdmin, async (req, res) => {
       );
       if (newOnes.length > 0) {
         totalGranted += newOnes.length;
-        results.push({ userId: user.id, granted: newOnes.map(a => a.name) });
+        results.push({ userId: user.id, username: user.username || '—', granted: newOnes.map(a => a.name) });
         // Notifica via Telegram se tiver chat vinculado
         if (user.telegram_chat_id) {
           for (const ach of newOnes) {

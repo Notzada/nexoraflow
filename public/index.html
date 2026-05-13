@@ -4283,8 +4283,8 @@ async function adminCheckAchievements() {
     if (data.results && data.results.length > 0) {
       details.innerHTML = data.results.map(r =>
         `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
-          <span style="color:var(--accent);font-family:var(--font-mono);font-size:10px;">${r.userId.substring(0,8)}…</span>
-          <span style="color:var(--text);"> → ${r.granted.join(', ')}</span>
+          <span style="color:var(--accent);font-family:var(--font-display);font-size:11px;font-weight:700;">${r.username}</span>
+          <span style="color:var(--text);font-size:11px;"> → ${r.granted.join(', ')}</span>
         </div>`
       ).join('');
     } else {
