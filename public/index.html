@@ -1181,22 +1181,40 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
   </div>
 </div>
 
-<!-- Modal: Editar Categoria do Gasto -->
-<div class="modal-overlay" id="modal-edit-cat" style="display:none" onclick="if(event.target===this)closeModal('modal-edit-cat')">
+<!-- Modal: Editar Gasto -->
+<div class="modal-overlay" id="modal-edit-expense" style="display:none" onclick="if(event.target===this)closeModal('modal-edit-expense')">
   <div class="modal-box">
-    <div class="modal-title">// Editar Categoria</div>
-    <div id="edit-cat-desc" style="font-size:12px;color:var(--text);margin-bottom:4px;font-family:var(--font-mono)"></div>
-    <div id="edit-cat-amount" style="font-size:11px;color:var(--muted);margin-bottom:16px;font-family:var(--font-mono)"></div>
-    <div class="modal-label">Nova Categoria</div>
-    <select class="modal-input" id="edit-cat-select" style="cursor:pointer">
-      <option>Alimentação</option><option>Transporte</option><option>Lazer</option>
-      <option>Saúde</option><option>Casa</option><option>Educação</option>
-      <option>Roupas</option><option>Outros</option>
-    </select>
-    <input type="hidden" id="edit-cat-expense-id">
+    <div class="modal-title">// Editar Gasto</div>
+    <div class="modal-label">Descrição</div>
+    <input class="modal-input" id="edit-exp-desc" placeholder="Descrição do gasto">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div>
+        <div class="modal-label">Valor (R$)</div>
+        <input class="modal-input" id="edit-exp-amt" type="number" step="0.01" placeholder="0.00">
+      </div>
+      <div id="edit-exp-date-wrap">
+        <div class="modal-label">Data</div>
+        <input class="modal-input" id="edit-exp-date" type="date">
+      </div>
+    </div>
+    <div class="modal-label">Categoria</div>
+    <select class="modal-input" id="edit-exp-cat" style="cursor:pointer"></select>
+    <div id="edit-exp-group-note" style="display:none;margin-top:12px;padding:10px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);border-radius:8px;font-size:11px;color:var(--muted);font-family:var(--font-mono)"></div>
+    <div id="edit-exp-scope" style="display:none;margin-top:10px;gap:8px;flex-direction:column">
+      <div class="modal-label">Aplicar para</div>
+      <div style="display:flex;gap:8px">
+        <button id="edit-scope-one" onclick="setEditScope('one')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#080c14;font-family:var(--font-display);font-size:9px;font-weight:700;cursor:pointer;letter-spacing:.5px">SÓ ESTE</button>
+        <button id="edit-scope-all" onclick="setEditScope('all')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--font-display);font-size:9px;font-weight:700;cursor:pointer;letter-spacing:.5px">TODOS DO GRUPO</button>
+      </div>
+    </div>
+    <input type="hidden" id="edit-exp-id">
+    <input type="hidden" id="edit-exp-group">
+    <input type="hidden" id="edit-exp-source">
+    <input type="hidden" id="edit-exp-inst-count">
+    <input type="hidden" id="edit-exp-scope-val" value="one">
     <div class="modal-actions">
-      <button class="modal-cancel" onclick="closeModal('modal-edit-cat')">Cancelar</button>
-      <button class="modal-confirm" onclick="confirmEditCategory()">Salvar →</button>
+      <button class="modal-cancel" onclick="closeModal('modal-edit-expense')">Cancelar</button>
+      <button class="modal-confirm" onclick="confirmEditExpense()">Salvar →</button>
     </div>
   </div>
 </div>
@@ -2265,7 +2283,7 @@ function getCatEmoji(name) {
 
 function populateCatSelects() {
   const cats = getCats();
-  const selects = ['exp-cat-input', 'edit-cat-select'];
+  const selects = ['exp-cat-input'];
   selects.forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
@@ -2572,7 +2590,7 @@ function expenseHTML(e, showDel=false) {
     ${amountHTML}
     ${showDel?`<div class="exp-actions">
       ${!isIncome?`<button class="paid-btn${isPaid?' active':''}" id="paid-btn-${e.id}" title="${isPaid?'Desmarcar como pago':'Marcar como pago'}" onclick="togglePaid('${e.id}',${isPaid})">✓</button>`:''}
-      <button class="edit-cat-btn" title="Editar categoria" onclick="openEditCategory('${e.id}','${descEsc}',${parseFloat(e.amount).toFixed(2)},'${e.category}')">✎</button>
+      <button class="edit-cat-btn" title="Editar gasto" onclick="openEditExpense('${e.id}','${descEsc}',${parseFloat(e.amount).toFixed(2)},'${e.category}','${e.created_at}','${e.source||'manual'}',${inst},'${group}',${e.installment_current||1})">✎</button>
       <button class="del-btn" title="Excluir" onclick="deleteExpense('${e.id}','${group}',${inst},'${e.source}')">✕</button>
     </div>`:''}
   </div>`;
@@ -3912,20 +3930,73 @@ async function deleteExpense(id, group='', installments=1, source='') {
   loadDashboard(); loadExpenses();
 }
 
-function openEditCategory(id, desc, amount, currentCat) {
-  document.getElementById('edit-cat-expense-id').value = id;
-  document.getElementById('edit-cat-desc').textContent = desc;
-  document.getElementById('edit-cat-amount').textContent = 'R$' + parseFloat(amount).toFixed(2);
-  document.getElementById('edit-cat-select').value = currentCat;
-  document.getElementById('modal-edit-cat').style.display = 'flex';
+function populateEditCatSelect(currentCat) {
+  const sel = document.getElementById('edit-exp-cat');
+  const defaults = ['Alimentação','Transporte','Lazer','Saúde','Casa','Educação','Roupas','Outros'];
+  const custom = JSON.parse(localStorage.getItem('nexora_cats') || '[]');
+  sel.innerHTML = '';
+  [...defaults, ...custom.map(c => c.name || c)].forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  sel.value = currentCat;
 }
 
-async function confirmEditCategory() {
-  const id  = document.getElementById('edit-cat-expense-id').value;
-  const cat = document.getElementById('edit-cat-select').value;
-  await supabaseClient.from('expenses').update({ category: cat }).eq('id', id);
-  closeModal('modal-edit-cat');
-  showToast('✏️ Categoria atualizada: ' + cat);
+function openEditExpense(id, desc, amount, category, createdAt, source, installments, group, installmentCurrent) {
+  document.getElementById('edit-exp-id').value = id;
+  document.getElementById('edit-exp-group').value = group || '';
+  document.getElementById('edit-exp-source').value = source || 'manual';
+  document.getElementById('edit-exp-inst-count').value = installments || 1;
+  document.getElementById('edit-exp-desc').value = desc;
+  document.getElementById('edit-exp-amt').value = parseFloat(amount).toFixed(2);
+  const dateVal = createdAt ? createdAt.split('T')[0] : new Date().toISOString().split('T')[0];
+  document.getElementById('edit-exp-date').value = dateVal;
+  populateEditCatSelect(category);
+  const isGroup = source === 'fixed' || (parseInt(installments) > 1 && group);
+  const scopeEl = document.getElementById('edit-exp-scope');
+  const noteEl  = document.getElementById('edit-exp-group-note');
+  if (isGroup) {
+    scopeEl.style.display = 'flex';
+    const label = source === 'fixed' ? `gasto fixo (${installments} meses)` : `${installments} parcelas (este é ${installmentCurrent}/${installments})`;
+    noteEl.style.display = 'block';
+    noteEl.textContent = `⚡ Este lançamento faz parte de um grupo de ${label}.`;
+  } else {
+    scopeEl.style.display = 'none';
+    noteEl.style.display = 'none';
+  }
+  setEditScope('one');
+  document.getElementById('modal-edit-expense').style.display = 'flex';
+}
+
+function setEditScope(val) {
+  document.getElementById('edit-exp-scope-val').value = val;
+  const isOne = val === 'one';
+  document.getElementById('edit-scope-one').style.cssText = `flex:1;padding:8px;border-radius:8px;border:1px solid ${isOne?'var(--accent)':'var(--border2)'};background:${isOne?'var(--accent)':'transparent'};color:${isOne?'#080c14':'var(--muted)'};font-family:var(--font-display);font-size:9px;font-weight:700;cursor:pointer;letter-spacing:.5px`;
+  document.getElementById('edit-scope-all').style.cssText = `flex:1;padding:8px;border-radius:8px;border:1px solid ${!isOne?'var(--accent)':'var(--border2)'};background:${!isOne?'var(--accent)':'transparent'};color:${!isOne?'#080c14':'var(--muted)'};font-family:var(--font-display);font-size:9px;font-weight:700;cursor:pointer;letter-spacing:.5px`;
+  document.getElementById('edit-exp-date-wrap').style.opacity = isOne ? '1' : '0.4';
+  document.getElementById('edit-exp-date').disabled = !isOne;
+}
+
+async function confirmEditExpense() {
+  const id    = document.getElementById('edit-exp-id').value;
+  const group = document.getElementById('edit-exp-group').value;
+  const scope = document.getElementById('edit-exp-scope-val').value;
+  const desc  = document.getElementById('edit-exp-desc').value.trim();
+  const amt   = parseFloat(document.getElementById('edit-exp-amt').value);
+  const date  = document.getElementById('edit-exp-date').value;
+  const cat   = document.getElementById('edit-exp-cat').value;
+  if (!desc || isNaN(amt) || amt <= 0) return showToast('⚠️ Preencha descrição e valor.');
+  if (scope === 'all' && group) {
+    await supabaseClient.from('expenses').update({ description: desc, amount: amt, category: cat }).eq('installment_group', group);
+    showToast('✅ Todos os lançamentos do grupo atualizados.');
+  } else {
+    const upd = { description: desc, amount: amt, category: cat };
+    if (date) upd.created_at = new Date(date + 'T12:00:00').toISOString();
+    await supabaseClient.from('expenses').update(upd).eq('id', id);
+    showToast('✏️ Gasto atualizado.');
+  }
+  closeModal('modal-edit-expense');
   loadDashboard(); loadExpenses();
 }
 
@@ -3970,14 +4041,14 @@ document.addEventListener('keydown', e => {
     closeModal('modal-task');
     closeModal('modal-habit');
     closeModal('modal-expense');
-    closeModal('modal-edit-cat');
+    closeModal('modal-edit-expense');
     closeModal('modal-goal');
   }
   if (e.key === 'Enter') {
     if (document.getElementById('modal-task').style.display === 'flex') confirmAddTask();
     if (document.getElementById('modal-habit').style.display === 'flex') confirmAddHabit();
     if (document.getElementById('modal-expense').style.display === 'flex') confirmAddExpense();
-    if (document.getElementById('modal-edit-cat').style.display === 'flex') confirmEditCategory();
+    if (document.getElementById('modal-edit-expense').style.display === 'flex') confirmEditExpense();
     if (document.getElementById('modal-goal').style.display === 'flex') confirmSaveGoal();
   }
 });
