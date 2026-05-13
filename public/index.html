@@ -602,12 +602,12 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
 /* ======= MOBILE NAV ======= */
 .mobile-nav{display:none;}
 @media (max-width:600px){
-  .mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border2);z-index:100;padding:6px 0 env(safe-area-inset-bottom,6px);}
-  .mob-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;cursor:pointer;color:var(--muted);font-size:8px;font-family:var(--font-display);font-weight:600;letter-spacing:.3px;transition:color .15s;}
+  .mobile-nav{display:flex;position:fixed;top:0;left:0;right:0;background:var(--surface);border-bottom:1px solid var(--border2);z-index:100;padding:env(safe-area-inset-top,0) 0 0;}
+  .mob-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;cursor:pointer;color:var(--muted);font-size:8px;font-family:var(--font-display);font-weight:600;letter-spacing:.3px;transition:color .15s;}
   .mob-item svg{width:18px;height:18px;opacity:.7;}
   .mob-item.active,.mob-item:active{color:var(--accent);}
   .mob-item.active svg{opacity:1;}
-  .main{padding-bottom:64px;}
+  .main{padding-bottom:0;padding-top:58px;}
   .mob-menu-item{padding:14px 24px;font-size:13px;font-family:var(--font-mono);color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);}
   .mob-menu-item:last-child{border-bottom:none;}
   .mob-menu-item:active{background:rgba(255,255,255,.04);}
@@ -1094,15 +1094,11 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
 
   </div>
 
-  <!-- Nav Mobile (bottom bar) -->
+  <!-- Nav Mobile (top bar) -->
   <nav class="mobile-nav" id="mobile-nav">
     <div class="mob-item" onclick="showPage('dashboard',this)">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
       <span>Dashboard</span>
-    </div>
-    <div class="mob-item" onclick="showPage('habits',this)">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8l4 4L14 4"/></svg>
-      <span>Hábitos</span>
     </div>
     <div class="mob-item" onclick="showPage('tasks',this)">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="4" x2="12" y2="4"/><line x1="4" y1="8" x2="12" y2="8"/><line x1="4" y1="12" x2="9" y2="12"/></svg>
@@ -1116,18 +1112,14 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V9M6 14V5M10 14V7M14 14V2"/></svg>
       <span>Ranking</span>
     </div>
-    <div class="mob-item" onclick="showPage('chat',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10a9.96 9.96 0 0 1-4.9-1.28L2 22l1.28-5.1A9.96 9.96 0 0 1 2 12 10 10 0 0 1 12 2z"/><circle cx="8" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="16" cy="12" r="1" fill="currentColor"/></svg>
-      <span>NEXO</span>
-    </div>
     <div class="mob-item" onclick="toggleMobMenu()">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="3" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="13" r="1.2" fill="currentColor"/></svg>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
       <span>Mais</span>
     </div>
   </nav>
 
   <!-- Menu "Mais" mobile -->
-  <div id="mob-menu" style="display:none;position:fixed;bottom:64px;left:0;right:0;background:var(--surface);border-top:1px solid var(--border2);z-index:99;padding:8px 0;">
+  <div id="mob-menu" style="display:none;position:fixed;top:58px;left:0;right:0;background:var(--surface);border-bottom:1px solid var(--border2);z-index:99;padding:8px 0;max-height:calc(100vh - 58px);overflow-y:auto;">
 
     <!-- Perfil do usuário no menu mobile -->
     <div onclick="showPage('profile',null);closeMobMenu()" style="display:flex;align-items:center;gap:12px;padding:14px 24px;border-bottom:1px solid var(--border);cursor:pointer;">
@@ -1146,9 +1138,10 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
       <span style="font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.5px;">Telegram Bot</span>
     </a>
 
+    <div class="mob-menu-item" onclick="showPage('habits',null);closeMobMenu()">✅ Hábitos</div>
+    <div class="mob-menu-item" onclick="showPage('chat',null);closeMobMenu()">💬 NEXO — Chat IA</div>
     <div class="mob-menu-item" onclick="showPage('agenda',null);closeMobMenu()">📅 Agenda</div>
     <div class="mob-menu-item" onclick="showPage('goals',null);closeMobMenu()">🎯 Metas</div>
-    <div class="mob-menu-item" onclick="showPage('chat',null);closeMobMenu()">💬 Chat IA</div>
     <div class="mob-menu-item" onclick="showPage('verify',null);closeMobMenu()">✅ Verificações</div>
     <div class="mob-menu-item" onclick="showPage('events',null);closeMobMenu()">⚡ Eventos</div>
     <div class="mob-menu-item" onclick="showPage('settings',null);closeMobMenu()">⚙️ Configurações</div>
