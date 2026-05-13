@@ -1568,25 +1568,65 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
 <div class="patch-overlay" id="modal-patch" style="display:none" onclick="if(event.target===this)closePatchNotes()">
   <div class="patch-box">
     <div class="patch-header">
-      <span class="patch-version">v2.1 · Patch Notes</span>
+      <span class="patch-version">v3.0 · Patch Notes</span>
       <button class="patch-close" onclick="closePatchNotes()">×</button>
     </div>
     <div class="patch-title">O que há de novo no NexoraFlow</div>
     <div class="patch-date">Maio 2026</div>
 
     <div class="patch-section">
-      <div class="patch-section-title">Tarefas <span class="patch-badge new">NOVO</span></div>
+      <div class="patch-section-title">Login Diário <span class="patch-badge new">NOVO</span></div>
       <div class="patch-item">
-        <span class="patch-icon">🔔</span>
-        <div class="patch-text"><strong>Notificações de tarefas</strong> — o NexoraFlow agora te avisa quando uma tarefa está próxima do prazo ou atrasada, mesmo com o app fechado. Ative as notificações para não perder nenhum deadline.</div>
+        <span class="patch-icon">📅</span>
+        <div class="patch-text"><strong>Calendário de check-in diário</strong> — abra o app todo dia e ganhe XP e coins crescentes. Quanto mais dias seguidos, maior a recompensa. Marcos especiais nos dias 7, 14, 21 e 30.</div>
+      </div>
+      <div class="patch-item">
+        <span class="patch-icon">⚡</span>
+        <div class="patch-text"><strong>Tag Inabalável</strong> — complete 30 dias de login seguidos e ganhe a tag lendária <strong>⚡ Inabalável</strong> automaticamente. A lenda absoluta do NexoraFlow.</div>
       </div>
     </div>
 
     <div class="patch-section">
-      <div class="patch-section-title">Loja <span class="patch-badge new">NOVO</span></div>
+      <div class="patch-section-title">Eventos <span class="patch-badge new">NOVO</span></div>
+      <div class="patch-item">
+        <span class="patch-icon">🫂</span>
+        <div class="patch-text"><strong>Traga seu Bonde</strong> — evento permanente de indicações. Convide amigos com seu link e suba nos marcos: 1, 3 e 5 indicações, com recompensas crescentes de XP e coins. Quem convidar 5 ganha a tag exclusiva <strong>🫂 Fundador</strong>.</div>
+      </div>
+    </div>
+
+    <div class="patch-section">
+      <div class="patch-section-title">Finanças <span class="patch-badge new">NOVO</span></div>
+      <div class="patch-item">
+        <span class="patch-icon">💳</span>
+        <div class="patch-text"><strong>Marcar gasto como pago</strong> — cada transação agora tem um botão para marcar como paga. O gasto fica destacado em verde e você tem controle total de quais contas já foram quitadas.</div>
+      </div>
+    </div>
+
+    <div class="patch-section">
+      <div class="patch-section-title">Conquistas <span class="patch-badge new">NOVO</span></div>
+      <div class="patch-item">
+        <span class="patch-icon">🏅</span>
+        <div class="patch-text"><strong>8 novas conquistas</strong> — <strong>Pontual</strong> (7 logins seguidos), <strong>Disciplinado</strong> (15 logins), <strong>Primeira Compra</strong>, <strong>Colecionador</strong> (tem um tema), <strong>Cofre Cheio</strong> (500 coins acumulados), <strong>Dia de Pagar</strong> (10 gastos pagos), <strong>Sempre Atento</strong> (notificações ativas) e <strong>Participante</strong> (entrou num evento).</div>
+      </div>
+    </div>
+
+    <div class="patch-section">
+      <div class="patch-section-title">Loja & Temas</div>
       <div class="patch-item">
         <span class="patch-icon">🌸</span>
-        <div class="patch-text"><strong>Tema Sakura — Tempo Limitado!</strong> — um novo tipo de item chegou à loja: <strong>Temas</strong>. O primeiro é o Sakura, inspirado nas flores de cerejeira do Japão. Rosa e branco por toda a interface. Disponível por apenas <strong>50 coins</strong> por tempo limitado.</div>
+        <div class="patch-text"><strong>Tema Sakura</strong> — rosa e branco por toda a interface. Disponível por <strong>50 coins</strong>.</div>
+      </div>
+      <div class="patch-item">
+        <span class="patch-icon">💘</span>
+        <div class="patch-text"><strong>Tema Dia dos Namorados</strong> — vermelho e dourado para celebrar o amor. Edição especial de 12 de junho.</div>
+      </div>
+    </div>
+
+    <div class="patch-section">
+      <div class="patch-section-title">Sistema</div>
+      <div class="patch-item">
+        <span class="patch-icon">🔔</span>
+        <div class="patch-text"><strong>Notificações push</strong> — o NexoraFlow avisa sobre tarefas pendentes e novidades, mesmo com o app fechado. Ative nas configurações. No iPhone, adicione o app à tela inicial primeiro.</div>
       </div>
     </div>
 
@@ -2751,7 +2791,7 @@ async function toggleTask(id, newVal, el) {
 // ============================================
 // PATCH NOTES
 // ============================================
-const PATCH_VERSION = 'v2.1';
+const PATCH_VERSION = 'v3.0';
 function openPatchNotes() {
   document.getElementById('modal-patch').style.display='flex';
   localStorage.setItem('nexora_patch_seen', PATCH_VERSION);
