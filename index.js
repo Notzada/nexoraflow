@@ -1520,6 +1520,43 @@ app.post('/api/admin/notify', requireAdmin, express.json(), async (req, res) => 
   res.json({ sent, failed });
 });
 
+// Verificação retroativa de conquistas para todos os usuários
+app.post('/api/admin/check-achievements', requireAdmin, async (req, res) => {
+  const { data: users } = await supabaseAdmin.from('user_profiles').select('id, telegram_chat_id');
+  if (!users || users.length === 0) return res.json({ processed: 0, totalGranted: 0 });
+
+  let totalGranted = 0;
+  const results = [];
+
+  for (const user of users) {
+    try {
+      const newOnes = await checkAndGrantAchievements(
+        supabaseAdmin,
+        user.id,
+        (uid, amount, reason) => { addXP(supabaseAdmin, uid, amount, reason); addWeeklyXP(supabaseAdmin, uid, amount); },
+        (uid, amount, reason) => addCoins(supabaseAdmin, uid, amount, reason)
+      );
+      if (newOnes.length > 0) {
+        totalGranted += newOnes.length;
+        results.push({ userId: user.id, granted: newOnes.map(a => a.name) });
+        // Notifica via Telegram se tiver chat vinculado
+        if (user.telegram_chat_id) {
+          for (const ach of newOnes) {
+            await sendTelegram(user.telegram_chat_id,
+              `🏆 *CONQUISTA DESBLOQUEADA!*\n\n*${ach.name}*\n_${ach.desc}_\n\n⭐ +${ach.xp} XP${ach.coins ? ` · 🪙 +${ach.coins} coins` : ''}`
+            );
+          }
+        }
+      }
+    } catch(e) {
+      console.error(`[CHECK-ACH] Erro no usuário ${user.id}:`, e.message);
+    }
+  }
+
+  console.log(`[ADMIN CHECK-ACH] ${users.length} usuários verificados, ${totalGranted} conquistas concedidas`);
+  res.json({ processed: users.length, totalGranted, results });
+});
+
 // ============================================
 // REFERRAL — Traga seu Bonde
 // ============================================

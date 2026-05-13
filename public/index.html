@@ -1084,6 +1084,17 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
         </div>
       </div>
 
+      <!-- Verificação retroativa de conquistas -->
+      <div class="chart-card">
+        <div class="card-title">🏅 Conquistas Retroativas</div>
+        <div class="card-sub" style="margin-bottom:12px">Verifica todos os usuários e concede conquistas que já atingiram mas ainda não receberam.</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="modal-confirm" onclick="adminCheckAchievements()" id="admin-ach-btn" style="flex:1;background:linear-gradient(135deg,#f5a623,#f97316)">🔍 Verificar todos os usuários</button>
+          <div id="admin-ach-result" style="font-size:11px;color:var(--muted)"></div>
+        </div>
+        <div id="admin-ach-details" style="margin-top:12px;font-size:11px;color:var(--muted);max-height:200px;overflow-y:auto;"></div>
+      </div>
+
       <!-- Usuários recentes -->
       <div class="chart-card">
         <div class="card-title">👥 Todos os Usuários</div>
@@ -4253,6 +4264,37 @@ async function adminSendNotif() {
   btn.disabled = false; btn.textContent = '📨 Enviar para todos';
 }
 
+async function adminCheckAchievements() {
+  const btn = document.getElementById('admin-ach-btn');
+  const result = document.getElementById('admin-ach-result');
+  const details = document.getElementById('admin-ach-details');
+  btn.disabled = true; btn.textContent = '⏳ Verificando...';
+  result.textContent = '';
+  details.innerHTML = '';
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  try {
+    const res = await fetch('/api/admin/check-achievements', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + session.access_token },
+    });
+    const data = await res.json();
+    result.textContent = `✅ ${data.processed} usuários · ${data.totalGranted} conquistas concedidas`;
+    if (data.results && data.results.length > 0) {
+      details.innerHTML = data.results.map(r =>
+        `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--accent);font-family:var(--font-mono);font-size:10px;">${r.userId.substring(0,8)}…</span>
+          <span style="color:var(--text);"> → ${r.granted.join(', ')}</span>
+        </div>`
+      ).join('');
+    } else {
+      details.innerHTML = '<div style="color:var(--muted);padding:8px 0">Nenhuma conquista nova para conceder.</div>';
+    }
+    showToast(`🏅 ${data.totalGranted} conquistas concedidas para ${data.processed} usuários!`);
+  } catch(e) { result.textContent = 'Erro ao verificar.'; }
+  btn.disabled = false; btn.textContent = '🔍 Verificar todos os usuários';
+}
+
 async function loadProfile() {
   if (!currentUser) return;
 
@@ -4315,34 +4357,52 @@ async function loadProfile() {
 
 // Definição de todas as conquistas (espelho do backend)
 const ACHIEVEMENTS = [
-  { id: 'first_action',   name: 'Primeiro Passo',         desc: 'Registrou primeira ação',            xp: 10,  category: 'inicio'       },
-  { id: 'telegram_link',  name: 'Bem-vindo ao Jogo',      desc: 'Vinculou o Telegram',                xp: 5,   category: 'inicio'       },
-  { id: 'streak_3',       name: '3 Dias Seguidos',        desc: 'Streak de 3 dias',                   xp: 15,  category: 'consistencia' },
-  { id: 'streak_7',       name: 'Semana Perfeita',        desc: 'Streak de 7 dias',                   xp: 40,  category: 'consistencia' },
-  { id: 'streak_30',      name: 'Mestre da Consistência', desc: 'Streak de 30 dias',                  xp: 150, category: 'consistencia' },
-  { id: 'tasks_10',       name: 'Organizado',             desc: '10 tarefas criadas',                 xp: 20,  category: 'uso'          },
-  { id: 'tasks_done_50',  name: 'Executor',               desc: '50 tarefas concluídas',              xp: 50,  category: 'uso'          },
-  { id: 'expenses_100',   name: 'Controlado',             desc: '100 gastos registrados',             xp: 30,  category: 'uso'          },
-  { id: 'first_goal',     name: 'Primeira Meta',          desc: 'Criou sua primeira meta',            xp: 20,  category: 'metas'        },
-  { id: 'goal_completed', name: 'Meta Concluída',         desc: 'Atingiu 100% de uma meta',           xp: 100, category: 'metas'        },
-  { id: 'ranking_1st',    name: 'Primeiro Lugar',         desc: '#1 no ranking semanal',              xp: 100, category: 'competicao'   },
-  { id: 'ranking_up',     name: 'Subiu no Ranking',       desc: 'Entrou no top 10 semanal',           xp: 30,  category: 'competicao'   },
-  { id: 'ranking_top3',   name: 'Top 3 Semanal',          desc: 'Top 3 no ranking semanal',           xp: 50,  category: 'competicao'   },
-  { id: 'active_7',       name: 'Viciado',                desc: '7 dias seguidos no app',             xp: 30,  category: 'engajamento'  },
-  { id: 'active_30',      name: 'Imparável',              desc: '30 dias ativo',                      xp: 120, category: 'engajamento'  },
-  { id: 'balanced_day',   name: 'Equilibrado',            desc: 'Gasto + hábito + tarefa no mesmo dia', xp: 25, category: 'avancado'  },
-  { id: 'multitasker',    name: 'Multitasker',            desc: 'Todas as features em 1 semana',      xp: 50,  category: 'avancado'     },
-  { id: 'nexora_legend',  name: 'Lenda Nexora',           desc: 'Nível 5+ com 10+ conquistas',        xp: 300, category: 'avancado'     },
+  { id: 'first_action',      name: 'Primeiro Passo',          desc: 'Registrou primeira ação',              xp: 10,  category: 'inicio'       },
+  { id: 'telegram_link',     name: 'Bem-vindo ao Jogo',       desc: 'Vinculou o Telegram',                  xp: 5,   category: 'inicio'       },
+  { id: 'streak_3',          name: '3 Dias Seguidos',         desc: 'Streak de 3 dias',                     xp: 15,  category: 'consistencia' },
+  { id: 'streak_7',          name: 'Semana Perfeita',         desc: 'Streak de 7 dias',                     xp: 40,  category: 'consistencia' },
+  { id: 'streak_30',         name: 'Mestre da Consistência',  desc: 'Streak de 30 dias',                    xp: 150, category: 'consistencia' },
+  { id: 'tasks_10',          name: 'Organizado',              desc: '10 tarefas criadas',                   xp: 20,  category: 'uso'          },
+  { id: 'tasks_done_50',     name: 'Executor',                desc: '50 tarefas concluídas',                xp: 50,  category: 'uso'          },
+  { id: 'expenses_100',      name: 'Controlado',              desc: '100 gastos registrados',               xp: 30,  category: 'uso'          },
+  { id: 'first_goal',        name: 'Primeira Meta',           desc: 'Criou sua primeira meta',              xp: 20,  category: 'metas'        },
+  { id: 'goal_completed',    name: 'Meta Concluída',          desc: 'Atingiu 100% de uma meta',             xp: 100, category: 'metas'        },
+  { id: 'ranking_1st',       name: 'Primeiro Lugar',          desc: '#1 no ranking semanal',                xp: 100, category: 'competicao'   },
+  { id: 'ranking_up',        name: 'Subiu no Ranking',        desc: 'Entrou no top 10 semanal',             xp: 30,  category: 'competicao'   },
+  { id: 'ranking_top3',      name: 'Top 3 Semanal',           desc: 'Top 3 no ranking semanal',             xp: 50,  category: 'competicao'   },
+  { id: 'active_7',          name: 'Viciado',                 desc: '7 dias seguidos no app',               xp: 30,  category: 'engajamento'  },
+  { id: 'active_30',         name: 'Imparável',               desc: '30 dias ativo',                        xp: 120, category: 'engajamento'  },
+  { id: 'balanced_day',      name: 'Equilibrado',             desc: 'Gasto + hábito + tarefa no mesmo dia', xp: 25,  category: 'avancado'     },
+  { id: 'multitasker',       name: 'Multitasker',             desc: 'Todas as features em 1 semana',        xp: 50,  category: 'avancado'     },
+  { id: 'nexora_legend',     name: 'Lenda Nexora',            desc: 'Nível 5+ com 10+ conquistas',          xp: 300, category: 'avancado'     },
+  { id: 'referral_1',        name: 'Recrutador',              desc: 'Convidou 1 amigo',                     xp: 30,  category: 'social'       },
+  { id: 'referral_3',        name: 'Influencer',              desc: 'Convidou 3 amigos',                    xp: 75,  category: 'social'       },
+  { id: 'referral_5',        name: 'Fundador',                desc: 'Convidou 5 amigos',                    xp: 200, category: 'social'       },
+  { id: 'login_7',           name: 'Pontual',                 desc: '7 dias de login seguidos',             xp: 25,  category: 'login'        },
+  { id: 'login_15',          name: 'Disciplinado',            desc: '15 dias de login seguidos',            xp: 50,  category: 'login'        },
+  { id: 'first_purchase',    name: 'Primeira Compra',         desc: 'Comprou um item na loja',              xp: 20,  category: 'loja'         },
+  { id: 'theme_owner',       name: 'Colecionador',            desc: 'Possui pelo menos 1 tema',             xp: 30,  category: 'loja'         },
+  { id: 'coins_500',         name: 'Cofre Cheio',             desc: 'Acumulou 500 coins',                   xp: 40,  category: 'coins'        },
+  { id: 'paid_10',           name: 'Dia de Pagar',            desc: '10 gastos marcados como pagos',        xp: 25,  category: 'financas'     },
+  { id: 'notif_enabled',     name: 'Sempre Atento',           desc: 'Ativou as notificações push',          xp: 10,  category: 'sistema'      },
+  { id: 'event_participated',name: 'Participante',            desc: 'Participou de um evento',              xp: 20,  category: 'eventos'      },
 ];
 
 const ACHIEVEMENT_CATEGORIES = {
-  inicio:       { label: '🚀 Início',        color: '#00d4ff' },
-  consistencia: { label: '💪 Consistência',   color: '#f5a623' },
-  uso:          { label: '📊 Uso do Sistema', color: '#4fc3f7' },
-  metas:        { label: '🎯 Metas',          color: '#25d499' },
-  competicao:   { label: '🏆 Competição',     color: '#ffd700' },
-  engajamento:  { label: '🎮 Engajamento',    color: '#a855f7' },
-  avancado:     { label: '🧠 Avançado',       color: '#e05c5c' },
+  inicio:       { label: '🚀 Início',         color: '#00d4ff' },
+  consistencia: { label: '💪 Consistência',    color: '#f5a623' },
+  uso:          { label: '📊 Uso do Sistema',  color: '#4fc3f7' },
+  metas:        { label: '🎯 Metas',           color: '#25d499' },
+  competicao:   { label: '🏆 Competição',      color: '#ffd700' },
+  engajamento:  { label: '🎮 Engajamento',     color: '#a855f7' },
+  avancado:     { label: '🧠 Avançado',        color: '#e05c5c' },
+  social:       { label: '👥 Social',          color: '#ec407a' },
+  login:        { label: '📅 Login Diário',    color: '#f97316' },
+  loja:         { label: '🛒 Loja',            color: '#22c55e' },
+  coins:        { label: '💰 Coins',           color: '#f5a623' },
+  financas:     { label: '💳 Finanças',        color: '#4fc3f7' },
+  sistema:      { label: '🔔 Sistema',         color: '#78909c' },
+  eventos:      { label: '⚡ Eventos',         color: '#a855f7' },
 };
 
 function renderConquests(unlockedMap) {
