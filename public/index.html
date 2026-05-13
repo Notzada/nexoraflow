@@ -1281,6 +1281,18 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
         <option>Saúde</option><option>Casa</option><option>Educação</option>
         <option>Roupas</option><option>Outros</option>
       </select>
+      <div id="quick-cat-gasto-form" style="display:none;margin-top:8px;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px;gap:8px;display:none;flex-direction:column;">
+        <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--accent);text-transform:uppercase;">Nova Categoria</div>
+        <div style="display:flex;gap:8px;">
+          <input id="quick-cat-emoji-gasto" class="modal-input" placeholder="🏷️" maxlength="4" style="width:56px;text-align:center;font-size:18px;padding:6px;flex-shrink:0;">
+          <input id="quick-cat-name-gasto" class="modal-input" placeholder="Nome da categoria" style="flex:1;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="closeQuickCat('gasto')" style="flex:1;padding:8px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:var(--font-display);font-size:10px;cursor:pointer;">Cancelar</button>
+          <button onclick="confirmQuickCat('gasto')" style="flex:1;padding:8px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--font-display);font-size:10px;font-weight:700;cursor:pointer;">Criar →</button>
+        </div>
+      </div>
+      <button onclick="openQuickCat('gasto')" style="margin-top:6px;background:none;border:1px dashed var(--border2);border-radius:8px;color:var(--muted);font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:1px;padding:6px 10px;cursor:pointer;width:100%;text-align:left;">+ Nova Categoria</button>
     </div>
     <div id="exp-receita-cat-section" style="display:none">
       <div class="modal-label">Categoria</div>
@@ -1288,6 +1300,15 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
         <option>Salário</option><option>Freelance</option><option>Investimento</option>
         <option>Presente</option><option>Reembolso</option><option>Outros</option>
       </select>
+      <div id="quick-cat-receita-form" style="display:none;margin-top:8px;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px;gap:8px;display:none;flex-direction:column;">
+        <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--accent);text-transform:uppercase;">Nova Categoria de Receita</div>
+        <input id="quick-cat-name-receita" class="modal-input" placeholder="Nome da categoria">
+        <div style="display:flex;gap:8px;">
+          <button onclick="closeQuickCat('receita')" style="flex:1;padding:8px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:var(--font-display);font-size:10px;cursor:pointer;">Cancelar</button>
+          <button onclick="confirmQuickCat('receita')" style="flex:1;padding:8px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--font-display);font-size:10px;font-weight:700;cursor:pointer;">Criar →</button>
+        </div>
+      </div>
+      <button onclick="openQuickCat('receita')" style="margin-top:6px;background:none;border:1px dashed var(--border2);border-radius:8px;color:var(--muted);font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:1px;padding:6px 10px;cursor:pointer;width:100%;text-align:left;">+ Nova Categoria</button>
     </div>
     <div class="modal-label">Data <span style="color:var(--muted);font-size:9px">(deixe em branco para hoje)</span></div>
     <input class="modal-input" id="exp-date-input" type="date">
@@ -2211,6 +2232,72 @@ function populateCatSelects() {
   });
 }
 
+function populateReceitaCatSelect() {
+  const custom = JSON.parse(localStorage.getItem('nexora_receita_cats') || '[]');
+  const defaults = ['Salário','Freelance','Investimento','Presente','Reembolso','Outros'];
+  const all = [...defaults, ...custom.filter(n => !defaults.includes(n))];
+  const sel = document.getElementById('exp-receita-cat-input');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = all.map(n => `<option value="${n}">${n}</option>`).join('');
+  if (current && all.includes(current)) sel.value = current;
+}
+
+function openQuickCat(type) {
+  const formId = `quick-cat-${type}-form`;
+  const form = document.getElementById(formId);
+  if (!form) return;
+  form.style.display = 'flex';
+  const nameInput = document.getElementById(`quick-cat-name-${type}`);
+  if (nameInput) { nameInput.value = ''; nameInput.focus(); }
+  if (type === 'gasto') {
+    const emojiInput = document.getElementById('quick-cat-emoji-gasto');
+    if (emojiInput) emojiInput.value = '';
+  }
+}
+
+function closeQuickCat(type) {
+  const form = document.getElementById(`quick-cat-${type}-form`);
+  if (form) form.style.display = 'none';
+}
+
+function confirmQuickCat(type) {
+  const nameInput = document.getElementById(`quick-cat-name-${type}`);
+  const name = nameInput?.value.trim();
+  if (!name) { showToast('Digite um nome para a categoria.'); return; }
+
+  if (type === 'gasto') {
+    const emojiInput = document.getElementById('quick-cat-emoji-gasto');
+    const emoji = emojiInput?.value.trim() || '🏷️';
+    const existing = getCats();
+    if (existing.find(c => c.name.toLowerCase() === name.toLowerCase())) {
+      showToast('Categoria já existe.'); return;
+    }
+    const palette = ['#f5a623','#4a90d9','#9b72f5','#e05c5c','#22c55e','#ec407a','#4fc3f7','#ff9800','#9c27b0','#00bcd4'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    const color = palette[Math.abs(hash) % palette.length];
+    const custom = JSON.parse(localStorage.getItem('nexora_cats') || '[]');
+    custom.push({ name, emoji, color });
+    localStorage.setItem('nexora_cats', JSON.stringify(custom));
+    syncCategoriesToServer(custom);
+    populateCatSelects();
+    document.getElementById('exp-cat-input').value = name;
+  } else {
+    const custom = JSON.parse(localStorage.getItem('nexora_receita_cats') || '[]');
+    if (custom.includes(name) || ['Salário','Freelance','Investimento','Presente','Reembolso','Outros'].includes(name)) {
+      showToast('Categoria já existe.'); return;
+    }
+    custom.push(name);
+    localStorage.setItem('nexora_receita_cats', JSON.stringify(custom));
+    populateReceitaCatSelect();
+    document.getElementById('exp-receita-cat-input').value = name;
+  }
+
+  closeQuickCat(type);
+  showToast(`Categoria "${name}" criada!`);
+}
+
 function openCatManager() {
   renderCatManager();
   document.getElementById('modal-cat-manager').style.display = 'flex';
@@ -2650,7 +2737,7 @@ async function loadGoals() {
     : '<div class="empty">Nenhuma meta ainda. Clique em "+ Nova Meta"!</div>';
 }
 
-function loadAll() { loadDashboard(); loadCustomTags(); populateCatSelects(); }
+function loadAll() { loadDashboard(); loadCustomTags(); populateCatSelects(); populateReceitaCatSelect(); }
 function loadPage(id) {
   if(id==='habits')   loadHabits();
   if(id==='tasks')    loadTasks();
@@ -3454,6 +3541,8 @@ function addExpensePrompt() {
   document.getElementById('exp-fixed-input').value='0';
   document.getElementById('exp-fixed-toggle').style.background='var(--border)';
   document.getElementById('exp-fixed-knob').style.left='2px';
+  closeQuickCat('gasto'); closeQuickCat('receita');
+  populateReceitaCatSelect();
   document.getElementById('modal-expense').style.display='flex';
   setTimeout(()=>document.getElementById('exp-desc-input').focus(),100);
 }
