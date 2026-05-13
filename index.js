@@ -1520,6 +1520,36 @@ app.post('/api/admin/notify', requireAdmin, express.json(), async (req, res) => 
   res.json({ sent, failed });
 });
 
+// ============================================
+// CONFIG DE MENUS — ativa/desativa itens globalmente
+// ============================================
+
+// Menus configuráveis e seus defaults
+const MENU_DEFAULTS = {
+  verify: true,
+  events: true,
+  ranking: true,
+  habits: true,
+  chat: true,
+};
+
+app.get('/api/config/menus', async (req, res) => {
+  const { data } = await supabaseAdmin.from('app_config').select('key, value').like('key', 'menu_%');
+  const menus = { ...MENU_DEFAULTS };
+  for (const row of (data || [])) {
+    const name = row.key.replace('menu_', '');
+    menus[name] = row.value === true || row.value === 'true';
+  }
+  res.json({ menus });
+});
+
+app.post('/api/config/menus', requireAdmin, express.json(), async (req, res) => {
+  const { key, enabled } = req.body;
+  if (!key || !Object.keys(MENU_DEFAULTS).includes(key)) return res.status(400).json({ error: 'Menu inválido.' });
+  await supabaseAdmin.from('app_config').upsert({ key: `menu_${key}`, value: enabled }, { onConflict: 'key' });
+  res.json({ ok: true, key, enabled });
+});
+
 // Verificação retroativa de conquistas para todos os usuários
 app.post('/api/admin/check-achievements', requireAdmin, async (req, res) => {
   const { data: users } = await supabaseAdmin.from('user_profiles').select('id, username, telegram_chat_id');

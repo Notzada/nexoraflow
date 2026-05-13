@@ -736,7 +736,7 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 9l4 4L14 4"/></svg>Verificações
       <span class="nav-badge" id="verify-badge" style="display:none">0</span>
     </div>
-    <div class="nav-item" onclick="showPage('events',this)">
+    <div class="nav-item" id="nav-events" onclick="showPage('events',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.5 3.5L8 10l-3 1.5.5-3.5L3 5.5 6.5 5z"/></svg>Eventos
     </div>
     <div class="nav-section">Sistema</div>
@@ -1093,6 +1093,13 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
         </div>
       </div>
 
+      <!-- Controle de menus -->
+      <div class="chart-card">
+        <div class="card-title">🔧 Menus Ativos</div>
+        <div class="card-sub" style="margin-bottom:16px">Ativa ou desativa seções para todos os usuários.</div>
+        <div id="admin-menu-toggles" style="display:flex;flex-direction:column;gap:12px;"></div>
+      </div>
+
       <!-- Verificação retroativa de conquistas -->
       <div class="chart-card">
         <div class="card-title">🏅 Conquistas Retroativas</div>
@@ -1162,8 +1169,8 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
     <div class="mob-menu-item" onclick="showPage('chat',null);closeMobMenu()">💬 NEXO — Chat IA</div>
     <div class="mob-menu-item" onclick="showPage('agenda',null);closeMobMenu()">📅 Agenda</div>
     <div class="mob-menu-item" onclick="showPage('goals',null);closeMobMenu()">🎯 Metas</div>
-    <div class="mob-menu-item" onclick="showPage('verify',null);closeMobMenu()">✅ Verificações</div>
-    <div class="mob-menu-item" onclick="showPage('events',null);closeMobMenu()">⚡ Eventos</div>
+    <div class="mob-menu-item" id="mob-nav-verify" onclick="showPage('verify',null);closeMobMenu()">✅ Verificações</div>
+    <div class="mob-menu-item" id="mob-nav-events" onclick="showPage('events',null);closeMobMenu()">⚡ Eventos</div>
     <div class="mob-menu-item" onclick="showPage('settings',null);closeMobMenu()">⚙️ Configurações</div>
     <div class="mob-menu-item" id="mob-patch-item" onclick="openPatchNotes();closeMobMenu()" style="display:flex;align-items:center;justify-content:space-between;">
       <span>🆕 Novidades</span>
@@ -1892,6 +1899,7 @@ async function startApp() {
   subscribeRealtime();
   checkGoalAlerts();
   checkPatchNotes();
+  loadMenuConfig();
   callDailyLogin();
   registerPushNotifications();
   processMyVerificationResults();
@@ -3163,6 +3171,15 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
+async function loadMenuConfig() {
+  try {
+    const res = await fetch('/api/config/menus');
+    if (!res.ok) return;
+    const { menus } = await res.json();
+    applyMenuConfig(menus);
+  } catch(e) {}
+}
+
 async function callDailyLogin(forceOpen = false) {
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -4244,6 +4261,81 @@ async function loadAdmin() {
       </div>`;
     }).join('');
   } catch(e) {}
+
+  // Carrega config de menus
+  try {
+    const res = await fetch('/api/config/menus');
+    const { menus } = await res.json();
+    renderMenuToggles(menus, token);
+  } catch(e) {}
+}
+
+const MENU_LABELS = {
+  verify:  { label: 'Verificações',  icon: '✅', desc: 'Aba de aprovação de provas entre amigos' },
+  events:  { label: 'Eventos',       icon: '⚡', desc: 'Aba de eventos e desafios temporários' },
+  ranking: { label: 'Ranking',       icon: '🏆', desc: 'Tabela de XP semanal com amigos' },
+  habits:  { label: 'Hábitos',       icon: '💪', desc: 'Registro e acompanhamento de hábitos' },
+  chat:    { label: 'NEXO Chat IA',  icon: '💬', desc: 'Assistente de IA integrado' },
+};
+
+function renderMenuToggles(menus, token) {
+  const wrap = document.getElementById('admin-menu-toggles');
+  if (!wrap) return;
+  wrap.innerHTML = Object.entries(MENU_LABELS).map(([key, { label, icon, desc }]) => {
+    const enabled = menus[key] !== false;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-family:var(--font-display);font-size:12px;font-weight:700">${icon} ${label}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${desc}</div>
+      </div>
+      <div onclick="toggleAdminMenu('${key}', ${!enabled}, '${token}')"
+           style="width:40px;height:22px;border-radius:11px;background:${enabled ? 'var(--accent)' : 'var(--border2)'};position:relative;cursor:pointer;transition:background .2s;flex-shrink:0" id="menu-toggle-${key}">
+        <div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${enabled ? '20px' : '2px'};transition:left .2s" id="menu-knob-${key}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleAdminMenu(key, enable, token) {
+  // Atualiza UI imediatamente
+  const toggle = document.getElementById(`menu-toggle-${key}`);
+  const knob   = document.getElementById(`menu-knob-${key}`);
+  if (toggle) toggle.style.background = enable ? 'var(--accent)' : 'var(--border2)';
+  if (knob)   knob.style.left = enable ? '20px' : '2px';
+
+  try {
+    const res = await fetch('/api/config/menus', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ key, enabled: enable }),
+    });
+    if (!res.ok) throw new Error();
+    applyMenuConfig({ [key]: enable });
+    showToast(`${enable ? '✅' : '🔕'} Menu "${MENU_LABELS[key]?.label}" ${enable ? 'ativado' : 'desativado'}.`);
+  } catch(e) {
+    // Reverte UI em caso de erro
+    if (toggle) toggle.style.background = enable ? 'var(--border2)' : 'var(--accent)';
+    if (knob)   knob.style.left = enable ? '2px' : '20px';
+    showToast('Erro ao salvar configuração.');
+  }
+}
+
+function applyMenuConfig(menus) {
+  const map = {
+    verify:  ['nav-verify',  'mob-nav-verify'],
+    events:  ['nav-events',  'mob-nav-events'],
+    ranking: ['nav-ranking', 'mob-nav-ranking'],
+    habits:  ['nav-habits',  'mob-nav-habits'],
+    chat:    ['nav-chat',    'mob-nav-chat'],
+  };
+  for (const [key, ids] of Object.entries(map)) {
+    if (menus[key] === undefined) continue;
+    const show = menus[key] !== false;
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = show ? '' : 'none';
+    });
+  }
 }
 
 async function adminSendNotif() {
