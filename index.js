@@ -1358,6 +1358,60 @@ app.post('/api/categories', express.json(), async (req, res) => {
 });
 
 // ============================================
+// ADMIN MIDDLEWARE
+// ============================================
+async function requireAdmin(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: profile } = await supabaseAdmin.from('user_profiles').select('is_admin').eq('id', user.id).single();
+  if (!profile?.is_admin) return res.status(403).json({ error: 'Forbidden' });
+  req.adminUser = user;
+  next();
+}
+
+app.get('/api/admin/stats', requireAdmin, async (req, res) => {
+  const [
+    { count: totalUsers },
+    { count: totalSubs },
+    { count: totalExpenses },
+    { count: totalTasks },
+    { data: recentUsers },
+  ] = await Promise.all([
+    supabaseAdmin.from('user_profiles').select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from('push_subscriptions').select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from('expenses').select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from('tasks').select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from('user_profiles').select('username, avatar_emoji, level, xp, created_at').order('created_at', { ascending: false }).limit(10),
+  ]);
+  res.json({ totalUsers, totalSubs, totalExpenses, totalTasks, recentUsers });
+});
+
+app.post('/api/admin/notify', requireAdmin, express.json(), async (req, res) => {
+  const { title, body } = req.body;
+  if (!title || !body) return res.status(400).json({ error: 'title e body obrigatórios' });
+
+  const { data: subs } = await supabaseAdmin.from('push_subscriptions').select('*');
+  if (!subs || subs.length === 0) return res.json({ sent: 0 });
+
+  const payload = JSON.stringify({ title, body });
+  let sent = 0, failed = 0;
+  for (const row of subs) {
+    try {
+      await webpush.sendNotification(row.subscription, payload);
+      sent++;
+    } catch(e) {
+      failed++;
+      if (e.statusCode === 410 || e.statusCode === 404)
+        await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', row.endpoint);
+    }
+  }
+  console.log(`[ADMIN NOTIFY] "${title}" → ${sent} enviados, ${failed} falhas`);
+  res.json({ sent, failed });
+});
+
+// ============================================
 // REFERRAL — Traga seu Bonde
 // ============================================
 const REFERRAL_MILESTONES = [

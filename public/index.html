@@ -710,6 +710,9 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
     <div class="nav-item" onclick="showPage('settings',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M13.3 10a1.2 1.2 0 00.2 1.3l.04.04a1.45 1.45 0 11-2.05 2.05l-.04-.04a1.2 1.2 0 00-1.3-.2 1.2 1.2 0 00-.73 1.1v.12a1.45 1.45 0 11-2.9 0v-.06a1.2 1.2 0 00-.78-1.1 1.2 1.2 0 00-1.3.2l-.04.04a1.45 1.45 0 11-2.05-2.05l.04-.04a1.2 1.2 0 00.2-1.3 1.2 1.2 0 00-1.1-.73H1.45a1.45 1.45 0 010-2.9h.06a1.2 1.2 0 001.1-.78 1.2 1.2 0 00-.2-1.3l-.04-.04A1.45 1.45 0 114.42 2.1l.04.04a1.2 1.2 0 001.3.2h.06a1.2 1.2 0 00.73-1.1V1.12a1.45 1.45 0 012.9 0v.06a1.2 1.2 0 00.73 1.1 1.2 1.2 0 001.3-.2l.04-.04a1.45 1.45 0 112.05 2.05l-.04.04a1.2 1.2 0 00-.2 1.3v.06a1.2 1.2 0 001.1.73h.12a1.45 1.45 0 010 2.9h-.06a1.2 1.2 0 00-1.1.73z"/></svg>Configurações
     </div>
+    <div class="nav-item" id="nav-admin" onclick="showPage('admin',this)" style="display:none;color:#f5a623">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="14" height="14" rx="2"/><path d="M4 8h8M8 4v8"/></svg>Admin
+    </div>
     <div class="sidebar-footer">
       <a class="tg-badge" id="tg-link" href="#" target="_blank"><div class="ws-dot"></div>Telegram Bot</a>
       <div class="user-widget" onclick="showPage('profile')" style="cursor:pointer" title="Ver perfil">
@@ -999,6 +1002,55 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
       </div>
     </div>
 
+    <!-- PÁGINA ADMIN -->
+    <div class="page" id="page-admin">
+      <div class="page-header"><div><div class="page-title">🛡️ Admin</div><div class="page-subtitle">Painel de administração NexoraFlow</div></div></div>
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px" id="admin-stats-grid">
+        <div class="chart-card" style="text-align:center;padding:20px 12px">
+          <div style="font-size:26px;font-family:var(--font-display);font-weight:900;color:var(--accent)" id="stat-admin-users">—</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">Usuários</div>
+        </div>
+        <div class="chart-card" style="text-align:center;padding:20px 12px">
+          <div style="font-size:26px;font-family:var(--font-display);font-weight:900;color:#22c55e" id="stat-admin-subs">—</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">Com notificação</div>
+        </div>
+        <div class="chart-card" style="text-align:center;padding:20px 12px">
+          <div style="font-size:26px;font-family:var(--font-display);font-weight:900;color:#4fc3f7" id="stat-admin-expenses">—</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">Gastos registrados</div>
+        </div>
+        <div class="chart-card" style="text-align:center;padding:20px 12px">
+          <div style="font-size:26px;font-family:var(--font-display);font-weight:900;color:#f5a623" id="stat-admin-tasks">—</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">Tarefas criadas</div>
+        </div>
+      </div>
+
+      <!-- Enviar Notificação -->
+      <div class="chart-card" style="margin-bottom:20px">
+        <div class="card-title">📣 Enviar Notificação</div>
+        <div class="card-sub" style="margin-bottom:16px">Enviado para todos os dispositivos com notificação ativa</div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-family:var(--font-display);font-weight:700">TÍTULO</div>
+          <input id="admin-notif-title" class="modal-input" placeholder="ex: 🌸 Novo evento disponível!" style="margin:0">
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-family:var(--font-display);font-weight:700">MENSAGEM</div>
+          <textarea id="admin-notif-body" class="modal-input" rows="3" placeholder="ex: Confira o novo desafio na aba Eventos!" style="margin:0;resize:vertical;min-height:80px"></textarea>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="modal-confirm" onclick="adminSendNotif()" id="admin-notif-btn" style="flex:1">📨 Enviar para todos</button>
+          <div id="admin-notif-result" style="font-size:11px;color:var(--muted)"></div>
+        </div>
+      </div>
+
+      <!-- Usuários recentes -->
+      <div class="chart-card">
+        <div class="card-title">👥 Usuários Recentes</div>
+        <div id="admin-users-list" style="margin-top:12px"></div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Nav Mobile (bottom bar) -->
@@ -1062,6 +1114,7 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
       <span>🆕 Novidades</span>
       <span id="mob-patch-dot" style="display:none;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);"></span>
     </div>
+    <div class="mob-menu-item" id="mob-admin-item" onclick="showPage('admin',null);closeMobMenu()" style="display:none;color:#f5a623">🛡️ Admin</div>
     <div class="mob-menu-item" style="color:var(--red);" onclick="signOut()">⏻ Sair da conta</div>
   </div>
 </div>
@@ -1592,7 +1645,15 @@ async function loadProfileAndStart() {
       await supabaseClient.from('user_profiles').update({ email: currentUser.email }).eq('id', currentUser.id);
       data.email = currentUser.email;
     }
-    currentProfile = data; startApp();
+    currentProfile = data;
+    // Mostra nav admin se for administrador
+    if (data.is_admin) {
+      const navAdmin = document.getElementById('nav-admin');
+      const mobAdmin = document.getElementById('mob-admin-item');
+      if (navAdmin) navAdmin.style.display = '';
+      if (mobAdmin) mobAdmin.style.display = '';
+    }
+    startApp();
   } else { showScreen('profile'); }
 }
 
@@ -2471,6 +2532,7 @@ function loadPage(id) {
   if(id==='events')   loadEvents();
   if(id==='chat')     initJarvis();
   if(id==='profile')  loadProfile();
+  if(id==='admin')    loadAdmin();
 }
 
 // ============================================
@@ -3674,6 +3736,61 @@ function renderDayEvents(ds, events) {
 // ============================================
 // PERFIL
 // ============================================
+async function loadAdmin() {
+  if (!currentProfile?.is_admin) return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const token = session?.access_token;
+  if (!token) return;
+
+  try {
+    const res = await fetch('/api/admin/stats', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) return;
+    const { totalUsers, totalSubs, totalExpenses, totalTasks, recentUsers } = await res.json();
+
+    document.getElementById('stat-admin-users').textContent    = totalUsers ?? '—';
+    document.getElementById('stat-admin-subs').textContent     = totalSubs ?? '—';
+    document.getElementById('stat-admin-expenses').textContent = totalExpenses ?? '—';
+    document.getElementById('stat-admin-tasks').textContent    = totalTasks ?? '—';
+
+    document.getElementById('admin-users-list').innerHTML = (recentUsers || []).map(u => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="width:34px;height:34px;border-radius:8px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${u.avatar_emoji || '🧑'}</div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-display);font-size:11px;font-weight:700">${u.username || '—'}</div>
+          <div style="font-size:10px;color:var(--muted)">Nível ${u.level} · ${u.xp} XP</div>
+        </div>
+        <div style="font-size:10px;color:var(--muted)">${new Date(u.created_at).toLocaleDateString('pt-BR')}</div>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+async function adminSendNotif() {
+  const title = document.getElementById('admin-notif-title').value.trim();
+  const body  = document.getElementById('admin-notif-body').value.trim();
+  if (!title || !body) { showToast('⚠️ Preencha título e mensagem.'); return; }
+
+  const btn = document.getElementById('admin-notif-btn');
+  const result = document.getElementById('admin-notif-result');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  try {
+    const res = await fetch('/api/admin/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ title, body }),
+    });
+    const data = await res.json();
+    if (data.sent !== undefined) {
+      result.textContent = `✅ ${data.sent} enviado(s)${data.failed ? `, ${data.failed} falha(s)` : ''}`;
+      document.getElementById('admin-notif-title').value = '';
+      document.getElementById('admin-notif-body').value  = '';
+      showToast(`📨 Notificação enviada para ${data.sent} dispositivo(s)!`);
+    }
+  } catch(e) { result.textContent = 'Erro ao enviar.'; }
+  btn.disabled = false; btn.textContent = '📨 Enviar para todos';
+}
+
 async function loadProfile() {
   if (!currentUser) return;
 
