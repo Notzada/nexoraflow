@@ -776,7 +776,10 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
     <div class="page active" id="page-dashboard">
       <div class="page-header">
         <div><div class="page-title">Dashboard</div><div class="page-subtitle" id="dash-date"></div></div>
-        <button class="add-btn" onclick="showPage('expenses');addExpensePrompt()">+ Gasto</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button onclick="callDailyLogin(true)" title="Login Diário" style="background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.3);border-radius:10px;padding:7px 10px;cursor:pointer;color:var(--accent);font-size:16px;line-height:1;display:flex;align-items:center;gap:5px;" id="daily-streak-badge">📅</button>
+          <button class="add-btn" onclick="showPage('expenses');addExpensePrompt()">+ Gasto</button>
+        </div>
       </div>
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-label">Gastos do Mês</div><div class="stat-value neg" id="stat-total">—</div><div class="stat-bar"><div class="stat-bar-fill" id="stat-bar-exp" style="background:var(--red)"></div></div></div>
@@ -1133,7 +1136,8 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
         <div id="mob-username" style="font-family:var(--font-display);font-size:12px;font-weight:700;">—</div>
         <div id="mob-level" style="font-size:10px;color:var(--accent);">Nível 1</div>
       </div>
-      <div style="font-size:10px;color:var(--muted);">Ver perfil →</div>
+      <button onclick="closeMobMenu();callDailyLogin(true)" title="Login Diário" style="background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.3);border-radius:8px;padding:6px 8px;cursor:pointer;color:var(--accent);font-size:14px;line-height:1;flex-shrink:0;" id="mob-daily-btn">📅</button>
+      <div style="font-size:10px;color:var(--muted);margin-left:4px;">Ver perfil →</div>
     </div>
 
     <!-- Telegram Bot -->
@@ -2891,11 +2895,19 @@ async function callDailyLogin(forceOpen = false) {
   } catch (e) { console.error('daily-login error:', e); }
 }
 
+function updateDailyStreakBadge(streak) {
+  const btn = document.getElementById('daily-streak-badge');
+  if (btn) btn.innerHTML = streak > 0 ? `🔥 ${streak}` : '📅';
+  const mobBtn = document.getElementById('mob-daily-btn');
+  if (mobBtn) mobBtn.innerHTML = streak > 0 ? `🔥 ${streak}` : '📅';
+}
+
 function openDailyLoginModal(data) {
   const { granted, streakDay, xpGained, coinsGained, tagGranted, history, today } = data;
 
   // Streak counter
   document.getElementById('daily-streak-num').textContent = streakDay || 0;
+  updateDailyStreakBadge(streakDay || 0);
 
   // Recompensa de hoje
   const rewardSection = document.getElementById('daily-reward-section');
