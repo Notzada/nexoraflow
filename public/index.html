@@ -1046,8 +1046,9 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
 
       <!-- Usuários recentes -->
       <div class="chart-card">
-        <div class="card-title">👥 Usuários Recentes</div>
-        <div id="admin-users-list" style="margin-top:12px"></div>
+        <div class="card-title">👥 Todos os Usuários</div>
+        <div class="card-sub" style="margin-bottom:12px">Status de notificação por usuário</div>
+        <div id="admin-users-list"></div>
       </div>
     </div>
 
@@ -3745,26 +3746,29 @@ async function loadAdmin() {
   try {
     const res = await fetch('/api/admin/stats', { headers: { 'Authorization': 'Bearer ' + token } });
     if (!res.ok) return;
-    const { totalUsers, totalSubs, totalExpenses, totalTasks, recentUsers } = await res.json();
+    const { totalUsers, totalSubs, totalExpenses, totalTasks, usersWithNotif } = await res.json();
 
     document.getElementById('stat-admin-users').textContent    = totalUsers ?? '—';
     document.getElementById('stat-admin-subs').textContent     = totalSubs ?? '—';
     document.getElementById('stat-admin-expenses').textContent = totalExpenses ?? '—';
     document.getElementById('stat-admin-tasks').textContent    = totalTasks ?? '—';
 
-    document.getElementById('admin-users-list').innerHTML = (recentUsers || []).map(u => {
+    document.getElementById('admin-users-list').innerHTML = (usersWithNotif || []).map(u => {
       const av = u.avatar_emoji || '';
       const isUrl = av.startsWith('http');
       const avatarHTML = isUrl
         ? `<div style="width:34px;height:34px;border-radius:8px;background:url('${av}') center/cover;border:1px solid rgba(168,85,247,.25);flex-shrink:0"></div>`
         : `<div style="width:34px;height:34px;border-radius:8px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${av || '🧑'}</div>`;
+      const notifBadge = u.hasNotif
+        ? `<span style="font-size:9px;font-family:var(--font-display);font-weight:700;background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.3);padding:2px 7px;border-radius:5px;white-space:nowrap">🔔 Ativo</span>`
+        : `<span style="font-size:9px;font-family:var(--font-display);font-weight:700;background:rgba(120,144,156,.08);color:var(--muted);border:1px solid rgba(120,144,156,.2);padding:2px 7px;border-radius:5px;white-space:nowrap">🔕 Sem notif</span>`;
       return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
         ${avatarHTML}
         <div style="flex:1">
           <div style="font-family:var(--font-display);font-size:11px;font-weight:700">${u.username || '—'}</div>
-          <div style="font-size:10px;color:var(--muted)">Nível ${u.level} · ${u.xp} XP</div>
+          <div style="font-size:10px;color:var(--muted)">Nível ${u.level} · ${u.xp} XP · ${new Date(u.created_at).toLocaleDateString('pt-BR')}</div>
         </div>
-        <div style="font-size:10px;color:var(--muted)">${new Date(u.created_at).toLocaleDateString('pt-BR')}</div>
+        ${notifBadge}
       </div>`;
     }).join('');
   } catch(e) {}

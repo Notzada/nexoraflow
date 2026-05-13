@@ -1384,8 +1384,24 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
     supabaseAdmin.from('expenses').select('id', { count: 'exact', head: true }),
     supabaseAdmin.from('tasks').select('id', { count: 'exact', head: true }),
     supabaseAdmin.from('user_profiles').select('username, avatar_emoji, level, xp, created_at').order('created_at', { ascending: false }).limit(10),
+    supabaseAdmin.from('push_subscriptions').select('user_id, created_at'),
   ]);
-  res.json({ totalUsers, totalSubs, totalExpenses, totalTasks, recentUsers });
+
+  // Monta mapa userId → tem notificação
+  const subsUserIds = new Set((arguments[5]?.data || []).map(s => s.user_id));
+
+  // Busca todos os usuários com info de notificação
+  const { data: allUsers } = await supabaseAdmin
+    .from('user_profiles')
+    .select('id, username, avatar_emoji, level, xp, created_at')
+    .order('created_at', { ascending: false });
+
+  const { data: subsData } = await supabaseAdmin.from('push_subscriptions').select('user_id');
+  const subsSet = new Set((subsData || []).map(s => s.user_id));
+
+  const usersWithNotif = (allUsers || []).map(u => ({ ...u, hasNotif: subsSet.has(u.id) }));
+
+  res.json({ totalUsers, totalSubs, totalExpenses, totalTasks, recentUsers, usersWithNotif });
 });
 
 app.post('/api/admin/notify', requireAdmin, express.json(), async (req, res) => {
