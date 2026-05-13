@@ -1505,8 +1505,26 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
     <div class="card-sub" style="margin-bottom:14px;">Personalize as categorias que aparecem ao registrar um gasto.</div>
     <div id="cat-manager-grid" class="cat-grid"></div>
     <button class="add-cat-btn" style="margin-top:10px;" onclick="openAddCatModal()">＋ Nova categoria</button>
+    <div style="height:1px;background:var(--border);margin:18px 0;"></div>
+    <div class="modal-title" style="margin-bottom:10px;">⚙️ Categorias de Receita</div>
+    <div id="receita-cat-manager-grid" class="cat-grid"></div>
+    <button class="add-cat-btn" style="margin-top:10px;" onclick="openAddReceitaCatModal()">＋ Nova categoria de receita</button>
     <div class="modal-actions" style="margin-top:20px;">
       <button class="modal-cancel" onclick="closeModal('modal-cat-manager')" style="width:100%;">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nova / Editar Categoria de Receita -->
+<div class="modal-overlay" id="modal-receita-cat" style="display:none" onclick="if(event.target===this)closeModal('modal-receita-cat')">
+  <div class="modal-box" style="max-width:380px;">
+    <div class="modal-title" id="receita-cat-modal-title">// Nova Categoria de Receita</div>
+    <div class="modal-label">Nome</div>
+    <input class="modal-input" id="receita-cat-name-input" placeholder="ex: Aluguel, Dividendos...">
+    <input type="hidden" id="receita-cat-edit-original" value="">
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal('modal-receita-cat')">Cancelar</button>
+      <button class="modal-confirm" onclick="confirmReceitaCat()">Salvar →</button>
     </div>
   </div>
 </div>
@@ -1514,7 +1532,8 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
 <!-- Modal: Nova Categoria -->
 <div class="modal-overlay" id="modal-add-cat" style="display:none" onclick="if(event.target===this)closeModal('modal-add-cat')">
   <div class="modal-box" style="max-width:440px;">
-    <div class="modal-title">// Nova Categoria</div>
+    <div class="modal-title" id="add-cat-modal-title">// Nova Categoria</div>
+    <input type="hidden" id="cat-edit-original" value="">
     <div class="modal-label">Nome</div>
     <input class="modal-input" id="new-cat-name" placeholder="ex: Pets, Academia, Viagem...">
     <div class="modal-label">Emoji</div>
@@ -2337,16 +2356,40 @@ function openCatManager() {
 }
 
 function renderCatManager() {
+  const DEFAULT_NAMES = ['Alimentação','Transporte','Lazer','Saúde','Casa','Educação','Roupas','Outros'];
   const grid = document.getElementById('cat-manager-grid');
   if (!grid) return;
   const cats = getCats();
-  grid.innerHTML = cats.map(c => `
-    <div class="cat-chip${c.builtin?' builtin':''}">
+  grid.innerHTML = cats.map(c => {
+    const isDefault = DEFAULT_NAMES.includes(c.name);
+    const actions = isDefault
+      ? `<span style="font-size:9px;color:var(--muted);font-family:var(--font-display);letter-spacing:1px;">PADRÃO</span>`
+      : `<button class="cat-chip-del" onclick="openEditCatModal('${c.name.replace(/'/,"\\'")}')" title="Editar" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 2px;">✏️</button>
+         <button class="cat-chip-del" onclick="deleteCustomCat('${c.name.replace(/'/,"\\'")}')" title="Remover">×</button>`;
+    return `<div class="cat-chip">
       <div class="cat-chip-dot" style="background:${c.color}"></div>
       <span style="font-size:15px;">${c.emoji}</span>
       <span class="cat-chip-label">${c.name}</span>
-      <button class="cat-chip-del" onclick="deleteCustomCat('${c.name}')" title="Remover">×</button>
-    </div>`).join('');
+      ${actions}
+    </div>`;
+  }).join('');
+
+  const DEFAULT_RECEITA = ['Salário','Freelance','Investimento','Presente','Reembolso','Outros'];
+  const receitaGrid = document.getElementById('receita-cat-manager-grid');
+  if (!receitaGrid) return;
+  const customReceita = JSON.parse(localStorage.getItem('nexora_receita_cats') || '[]');
+  const allReceita = [...DEFAULT_RECEITA, ...customReceita.filter(n => !DEFAULT_RECEITA.includes(n))];
+  receitaGrid.innerHTML = allReceita.map(name => {
+    const isDefault = DEFAULT_RECEITA.includes(name);
+    const actions = isDefault
+      ? `<span style="font-size:9px;color:var(--muted);font-family:var(--font-display);letter-spacing:1px;">PADRÃO</span>`
+      : `<button class="cat-chip-del" onclick="openEditReceitaCatModal('${name.replace(/'/,"\\'")}')" title="Editar" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 2px;">✏️</button>
+         <button class="cat-chip-del" onclick="deleteReceitaCat('${name.replace(/'/,"\\'")}')" title="Remover">×</button>`;
+    return `<div class="cat-chip">
+      <span class="cat-chip-label">${name}</span>
+      ${actions}
+    </div>`;
+  }).join('');
 }
 
 function deleteCustomCat(name) {
@@ -2357,10 +2400,22 @@ function deleteCustomCat(name) {
   syncCategoriesToServer(updated);
   renderCatManager();
   populateCatSelects();
-  showToast('🗑️ Categoria removida.');
+  showToast('Categoria removida.');
+}
+
+function deleteReceitaCat(name) {
+  if (!confirm(`Remover a categoria "${name}"?`)) return;
+  const custom = JSON.parse(localStorage.getItem('nexora_receita_cats') || '[]');
+  const updated = custom.filter(n => n !== name);
+  localStorage.setItem('nexora_receita_cats', JSON.stringify(updated));
+  renderCatManager();
+  populateReceitaCatSelect();
+  showToast('Categoria removida.');
 }
 
 function openAddCatModal() {
+  document.getElementById('add-cat-modal-title').textContent = '// Nova Categoria';
+  document.getElementById('cat-edit-original').value = '';
   document.getElementById('new-cat-name').value = '';
   document.querySelectorAll('#emoji-picker .emoji-opt').forEach((el,i)=>el.classList.toggle('sel',i===0));
   document.querySelectorAll('#color-picker .color-opt').forEach((el,i)=>el.classList.toggle('sel',i===0));
@@ -2368,23 +2423,84 @@ function openAddCatModal() {
   setTimeout(()=>document.getElementById('new-cat-name').focus(),100);
 }
 
+function openEditCatModal(name) {
+  const cat = getCats().find(c => c.name === name);
+  if (!cat) return;
+  document.getElementById('add-cat-modal-title').textContent = '// Editar Categoria';
+  document.getElementById('cat-edit-original').value = name;
+  document.getElementById('new-cat-name').value = cat.name;
+  document.querySelectorAll('#emoji-picker .emoji-opt').forEach(el => {
+    el.classList.toggle('sel', el.dataset.emoji === cat.emoji);
+  });
+  document.querySelectorAll('#color-picker .color-opt').forEach(el => {
+    el.classList.toggle('sel', el.dataset.color === cat.color);
+  });
+  document.getElementById('modal-add-cat').style.display='flex';
+  setTimeout(()=>document.getElementById('new-cat-name').focus(),100);
+}
+
+function openAddReceitaCatModal() {
+  document.getElementById('receita-cat-modal-title').textContent = '// Nova Categoria de Receita';
+  document.getElementById('receita-cat-edit-original').value = '';
+  document.getElementById('receita-cat-name-input').value = '';
+  document.getElementById('modal-receita-cat').style.display='flex';
+  setTimeout(()=>document.getElementById('receita-cat-name-input').focus(),100);
+}
+
+function openEditReceitaCatModal(name) {
+  document.getElementById('receita-cat-modal-title').textContent = '// Editar Categoria de Receita';
+  document.getElementById('receita-cat-edit-original').value = name;
+  document.getElementById('receita-cat-name-input').value = name;
+  document.getElementById('modal-receita-cat').style.display='flex';
+  setTimeout(()=>document.getElementById('receita-cat-name-input').focus(),100);
+}
+
+function confirmReceitaCat() {
+  const name = document.getElementById('receita-cat-name-input').value.trim();
+  if (!name) { showToast('Digite um nome.'); return; }
+  const original = document.getElementById('receita-cat-edit-original').value;
+  const DEFAULT_RECEITA = ['Salário','Freelance','Investimento','Presente','Reembolso','Outros'];
+  let custom = JSON.parse(localStorage.getItem('nexora_receita_cats') || '[]');
+  if (original) {
+    custom = custom.map(n => n === original ? name : n);
+  } else {
+    if ([...DEFAULT_RECEITA, ...custom].find(n => n.toLowerCase() === name.toLowerCase())) {
+      showToast('Categoria já existe.'); return;
+    }
+    custom.push(name);
+  }
+  localStorage.setItem('nexora_receita_cats', JSON.stringify(custom));
+  closeModal('modal-receita-cat');
+  renderCatManager();
+  populateReceitaCatSelect();
+  showToast(original ? 'Categoria atualizada.' : `Categoria "${name}" criada!`);
+}
+
 function confirmAddCat() {
   const name = document.getElementById('new-cat-name').value.trim();
   if (!name) { showToast('⚠️ Digite um nome para a categoria.'); return; }
-  const cats = getCats();
-  if (cats.find(c=>c.name.toLowerCase()===name.toLowerCase())) {
-    showToast('⚠️ Já existe uma categoria com esse nome.'); return;
-  }
+  const original = document.getElementById('cat-edit-original').value;
   const emoji = document.querySelector('#emoji-picker .emoji-opt.sel')?.dataset.emoji || '🏷️';
   const color = document.querySelector('#color-picker .color-opt.sel')?.dataset.color || '#a855f7';
-  const custom = JSON.parse(localStorage.getItem('nexora_cats') || '[]');
-  custom.push({ name, emoji, color });
+  let custom = JSON.parse(localStorage.getItem('nexora_cats') || '[]');
+
+  if (original) {
+    // Modo edição — atualiza a categoria existente
+    custom = custom.map(c => c.name === original ? { ...c, name, emoji, color } : c);
+  } else {
+    const cats = getCats();
+    if (cats.find(c=>c.name.toLowerCase()===name.toLowerCase())) {
+      showToast('⚠️ Já existe uma categoria com esse nome.'); return;
+    }
+    custom.push({ name, emoji, color });
+  }
+
   localStorage.setItem('nexora_cats', JSON.stringify(custom));
   syncCategoriesToServer(custom);
   closeModal('modal-add-cat');
   renderCatManager();
   populateCatSelects();
-  showToast(`✅ Categoria "${name}" criada!`);
+  showToast(original ? `Categoria "${name}" atualizada!` : `✅ Categoria "${name}" criada!`);
 }
 
 // Emoji & color picker selection
