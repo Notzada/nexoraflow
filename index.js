@@ -1166,7 +1166,19 @@ app.post('/api/event/finalize', express.json(), async (req, res) => {
 // API — COINS & LOJA
 // ============================================
 
-// Login diário: +5 coins (uma vez por dia)
+// Recompensas de login diário por dia de streak
+function getDailyLoginReward(streakDay) {
+  if (streakDay === 30) return { xp: 100, coins: 100 };
+  if (streakDay === 21) return { xp: 50,  coins: 35  };
+  if (streakDay === 14) return { xp: 40,  coins: 30  };
+  if (streakDay === 7)  return { xp: 30,  coins: 25  };
+  if (streakDay >= 22)  return { xp: 20,  coins: 15  };
+  if (streakDay >= 15)  return { xp: 15,  coins: 10  };
+  if (streakDay >= 8)   return { xp: 12,  coins: 8   };
+  return                       { xp: 10,  coins: 5   };
+}
+
+// Login diário — registra no calendário, calcula streak, concede recompensas escalantes
 app.post('/api/daily-login', express.json(), async (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
@@ -1174,15 +1186,95 @@ app.post('/api/daily-login', express.json(), async (req, res) => {
   if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
 
   const today = new Date().toISOString().split('T')[0];
-  const { data: profile } = await supabaseAdmin
-    .from('user_profiles').select('coins, last_coin_login').eq('id', user.id).single();
+
+  // Busca histórico dos últimos 35 dias
+  const [{ data: profile }, { data: history }] = await Promise.all([
+    supabaseAdmin.from('user_profiles').select('coins').eq('id', user.id).single(),
+    supabaseAdmin.from('daily_logins').select('login_date, streak_day, xp_gained, coins_gained')
+      .eq('user_id', user.id)
+      .order('login_date', { ascending: false })
+      .limit(35),
+  ]);
+
   if (!profile) return res.status(404).json({ error: 'Perfil não encontrado.' });
 
-  if (profile.last_coin_login === today) return res.json({ granted: false, coins: profile.coins || 0 });
+  // Já fez login hoje?
+  const alreadyToday = (history || []).some(h => h.login_date === today);
 
-  await supabaseAdmin.from('user_profiles').update({ last_coin_login: today }).eq('id', user.id);
-  const newCoins = await addCoins(supabaseAdmin, user.id, 5, 'Login diário');
-  res.json({ granted: true, coins: newCoins });
+  let granted = false;
+  let xpGained = 0;
+  let coinsGained = 0;
+  let streakDay = 1;
+  let tagGranted = null;
+
+  if (!alreadyToday) {
+    // Calcula streak: verifica se ontem tem registro
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const lastEntry = (history || [])[0];
+    if (lastEntry && lastEntry.login_date === yesterday) {
+      streakDay = (lastEntry.streak_day || 1) + 1;
+    }
+
+    const reward = getDailyLoginReward(streakDay);
+    xpGained    = reward.xp;
+    coinsGained = reward.coins;
+
+    // Registra na tabela
+    await supabaseAdmin.from('daily_logins').insert({
+      user_id:      user.id,
+      login_date:   today,
+      streak_day:   streakDay,
+      xp_gained:    xpGained,
+      coins_gained: coinsGained,
+    });
+
+    // Concede XP e coins
+    await Promise.all([
+      addXP(supabaseAdmin, user.id, xpGained, 'Login diário'),
+      addCoins(supabaseAdmin, user.id, coinsGained, 'Login diário'),
+      addWeeklyXP(supabaseAdmin, user.id, xpGained),
+    ]);
+
+    // Dia 30 → concede tag Inabalável
+    if (streakDay === 30) {
+      const { data: alreadyHasTag } = await supabaseAdmin
+        .from('user_purchases').select('id').eq('user_id', user.id).eq('item_id', 'tag_inavalavel').maybeSingle();
+      if (!alreadyHasTag) {
+        await supabaseAdmin.from('user_purchases').insert({ user_id: user.id, item_id: 'tag_inavalavel' });
+        await supabaseAdmin.from('user_profiles').update({ active_tag: 'tag_inavalavel' }).eq('id', user.id);
+        tagGranted = 'tag_inavalavel';
+      }
+    }
+
+    granted = true;
+  }
+
+  // Atualiza profile.coins para retornar
+  const { data: updatedProfile } = await supabaseAdmin
+    .from('user_profiles').select('coins').eq('id', user.id).single();
+
+  // Retorna histórico para o calendário (últimos 35 dias)
+  const { data: fullHistory } = await supabaseAdmin
+    .from('daily_logins').select('login_date, streak_day, xp_gained, coins_gained')
+    .eq('user_id', user.id)
+    .order('login_date', { ascending: false })
+    .limit(35);
+
+  // Se não concedeu hoje, pegar o streak do registro mais recente
+  if (!granted && fullHistory && fullHistory.length > 0) {
+    streakDay = fullHistory[0].streak_day || 1;
+  }
+
+  res.json({
+    granted,
+    today,
+    streakDay,
+    xpGained,
+    coinsGained,
+    tagGranted,
+    coins: updatedProfile?.coins || profile.coins || 0,
+    history: fullHistory || [],
+  });
 });
 
 // Listar itens da loja com status de compra do usuário
@@ -1200,6 +1292,7 @@ app.get('/api/shop', async (req, res) => {
   const ownedIds = new Set((purchases || []).map(p => p.item_id));
   const items = SHOP_ITEMS
     .filter(item => !item.ownerOnly || item.ownerOnly === user.email)
+    .filter(item => !item.earnedOnly)
     .map(item => ({
       ...item,
       owned: ownedIds.has(item.id),

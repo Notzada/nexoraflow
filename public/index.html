@@ -213,6 +213,43 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-si
 .patch-badge.new{background:rgba(168,85,247,.15);color:var(--accent);border:1px solid rgba(168,85,247,.3);}
 .patch-badge.fix{background:rgba(79,195,247,.12);color:#4fc3f7;border:1px solid rgba(79,195,247,.25);}
 
+/* ======= DAILY LOGIN ======= */
+.daily-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;}
+.daily-box{background:var(--surface);border:1px solid var(--border2);border-radius:24px;padding:28px 24px;max-width:400px;width:100%;max-height:90vh;overflow-y:auto;}
+.daily-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.daily-title{font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;background:linear-gradient(135deg,var(--accent),#f5a623);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.daily-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:0;}
+.daily-close:hover{color:var(--text);}
+.daily-streak{text-align:center;margin:16px 0 20px;}
+.daily-streak-num{font-family:var(--font-display);font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5a623,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+.daily-streak-label{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:1px;}
+.daily-reward-box{background:var(--bg);border:1px solid var(--border2);border-radius:14px;padding:14px;margin-bottom:20px;text-align:center;}
+.daily-reward-title{font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.daily-reward-row{display:flex;justify-content:center;gap:20px;}
+.daily-reward-item{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.daily-reward-val{font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--text);}
+.daily-reward-sub{font-size:9px;color:var(--muted);letter-spacing:1px;}
+.daily-cal-label{font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.daily-cal-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.daily-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:20px;}
+.daily-cal-day{width:100%;aspect-ratio:1;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:10px;font-weight:700;color:var(--muted);}
+.daily-cal-day.done{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.4);color:var(--accent);}
+.daily-cal-day.today{background:linear-gradient(135deg,rgba(168,85,247,.25),rgba(245,166,35,.2));border-color:var(--accent);color:var(--text);box-shadow:0 0 8px rgba(168,85,247,.3);}
+.daily-cal-day.milestone{border-color:rgba(245,166,35,.5);}
+.daily-cal-day.milestone.done{background:rgba(245,166,35,.15);border-color:#f5a623;color:#f5a623;}
+.daily-milestone-row{display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;}
+.daily-milestone{flex-shrink:0;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;text-align:center;min-width:72px;}
+.daily-milestone.reached{border-color:rgba(245,166,35,.5);background:rgba(245,166,35,.08);}
+.daily-milestone-day{font-family:var(--font-display);font-size:16px;font-weight:900;color:var(--muted);}
+.daily-milestone.reached .daily-milestone-day{color:#f5a623;}
+.daily-milestone-prize{font-size:10px;color:var(--muted);margin-top:2px;}
+.daily-milestone.reached .daily-milestone-prize{color:var(--text);}
+.daily-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:12px;font-family:var(--font-display);font-weight:700;font-size:13px;cursor:pointer;letter-spacing:1px;margin-top:4px;}
+.daily-btn:hover{opacity:.9;}
+.daily-tag-prize{background:linear-gradient(135deg,rgba(245,166,35,.15),rgba(168,85,247,.15));border:1px solid rgba(245,166,35,.4);border-radius:12px;padding:14px;text-align:center;margin-bottom:16px;}
+.daily-tag-prize-title{font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623;margin-bottom:6px;}
+.daily-tag-prize-body{font-size:13px;font-weight:700;color:var(--text);}
+
 /* ======= MODAL ======= */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;}
 .modal-box{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:28px;max-width:420px;width:100%;}
@@ -1553,6 +1590,59 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
   </div>
 </div>
 
+<!-- DAILY LOGIN MODAL -->
+<div class="daily-overlay" id="modal-daily-login" style="display:none" onclick="if(event.target===this)closeDailyLogin()">
+  <div class="daily-box">
+    <div class="daily-header">
+      <div class="daily-title">Login Diário</div>
+      <button class="daily-close" onclick="closeDailyLogin()">×</button>
+    </div>
+    <div class="daily-streak">
+      <div class="daily-streak-num" id="daily-streak-num">0</div>
+      <div class="daily-streak-label">🔥 DIAS SEGUIDOS</div>
+    </div>
+    <div id="daily-tag-prize-box" style="display:none" class="daily-tag-prize">
+      <div class="daily-tag-prize-title">Prêmio conquistado!</div>
+      <div class="daily-tag-prize-body" id="daily-tag-prize-text"></div>
+    </div>
+    <div class="daily-reward-box" id="daily-reward-section">
+      <div class="daily-reward-title">Recompensa de hoje</div>
+      <div class="daily-reward-row">
+        <div class="daily-reward-item">
+          <div class="daily-reward-val" id="daily-xp-val">+10</div>
+          <div class="daily-reward-sub">XP</div>
+        </div>
+        <div class="daily-reward-item">
+          <div class="daily-reward-val" id="daily-coins-val">+5</div>
+          <div class="daily-reward-sub">COINS</div>
+        </div>
+      </div>
+    </div>
+    <div class="daily-cal-label">Últimos 35 dias</div>
+    <div class="daily-cal" id="daily-cal"></div>
+    <div class="daily-cal-label">Marcos</div>
+    <div class="daily-milestone-row">
+      <div class="daily-milestone" id="daily-ms-7">
+        <div class="daily-milestone-day">7</div>
+        <div class="daily-milestone-prize">+25 coins</div>
+      </div>
+      <div class="daily-milestone" id="daily-ms-14">
+        <div class="daily-milestone-day">14</div>
+        <div class="daily-milestone-prize">+30 coins</div>
+      </div>
+      <div class="daily-milestone" id="daily-ms-21">
+        <div class="daily-milestone-day">21</div>
+        <div class="daily-milestone-prize">+35 coins</div>
+      </div>
+      <div class="daily-milestone" id="daily-ms-30">
+        <div class="daily-milestone-day">30</div>
+        <div class="daily-milestone-prize">⚡ Inabalável</div>
+      </div>
+    </div>
+    <button class="daily-btn" id="daily-claim-btn" onclick="closeDailyLogin()">Resgatar e continuar →</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -2689,6 +2779,8 @@ const SHOP_ITEMS_CLIENT = [
   { id: 'tag_mestre',      name: 'Mestre dos Hábitos',  emoji: '🧘', desc: 'Disciplina acima de tudo',      cost: 350,  rarity: 'raro',     type: 'tag'   },
   { id: 'tag_campeao',     name: 'Campeão',             emoji: '🏆', desc: 'Chegou ao topo do ranking',     cost: 500,  rarity: 'épico',    type: 'tag'   },
   { id: 'tag_lendario',    name: 'Lendário',            emoji: '👑', desc: 'Acima de todos',                cost: 1000, rarity: 'lendário', type: 'tag'   },
+  { id: 'tag_fundador',    name: 'Fundador',            emoji: '🫂', desc: 'Trouxe 5 amigos para o Nexora — exclusivo', cost: 0, rarity: 'lendário', type: 'tag', earnedOnly: true },
+  { id: 'tag_inavalavel',  name: 'Inabalável',          emoji: '⚡', desc: '30 dias seguidos sem falhar — lenda absoluta', cost: 0, rarity: 'lendário', type: 'tag', earnedOnly: true },
   { id: 'theme_sakura',    name: 'Sakura',              emoji: '🌸', desc: 'Rosa e branco como as flores de cerejeira do Japão', cost: 50,  rarity: 'raro', type: 'theme', limited: true,
     preview: ['#f472b6','#fda4af','#fdf2f8','#1c1118','#120a0e'] },
   { id: 'theme_namorados', name: 'Dia dos Namorados',   emoji: '💘', desc: 'Vermelho e dourado para celebrar o amor — 12 de junho', cost: 0, rarity: 'épico', type: 'theme', limited: true,
@@ -2778,7 +2870,7 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
-async function callDailyLogin() {
+async function callDailyLogin(forceOpen = false) {
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) return;
@@ -2787,13 +2879,90 @@ async function callDailyLogin() {
       headers: { 'Authorization': `Bearer ${session.access_token}` },
     });
     const data = await res.json();
-    if (data.granted) {
-      updateCoinsDisplay(data.coins);
-      setTimeout(() => { showToast('+5 coins — login diário!'); showCoinPopup(5); }, 1500);
-    } else {
-      updateCoinsDisplay(data.coins);
+    updateCoinsDisplay(data.coins);
+
+    const today = new Date().toISOString().split('T')[0];
+    const seenKey = 'nexora_daily_seen_' + today;
+    // Abre o modal: sempre se concedeu hoje, ou se forçado, ou se ainda não viu hoje
+    if (data.granted || forceOpen || !localStorage.getItem(seenKey)) {
+      localStorage.setItem(seenKey, '1');
+      openDailyLoginModal(data);
     }
   } catch (e) { console.error('daily-login error:', e); }
+}
+
+function openDailyLoginModal(data) {
+  const { granted, streakDay, xpGained, coinsGained, tagGranted, history, today } = data;
+
+  // Streak counter
+  document.getElementById('daily-streak-num').textContent = streakDay || 0;
+
+  // Recompensa de hoje
+  const rewardSection = document.getElementById('daily-reward-section');
+  if (granted) {
+    document.getElementById('daily-xp-val').textContent = `+${xpGained}`;
+    document.getElementById('daily-coins-val').textContent = `+${coinsGained}`;
+    rewardSection.style.display = 'block';
+  } else {
+    rewardSection.style.display = 'none';
+  }
+
+  // Tag conquistada
+  const tagBox = document.getElementById('daily-tag-prize-box');
+  if (tagGranted === 'tag_inavalavel') {
+    tagBox.style.display = 'block';
+    document.getElementById('daily-tag-prize-text').textContent = '⚡ Tag "Inabalável" desbloqueada! Você é uma lenda.';
+  } else {
+    tagBox.style.display = 'none';
+  }
+
+  // Calendário — últimos 35 dias
+  const loggedDates = new Set((history || []).map(h => h.login_date));
+  const milestones = new Set([7, 14, 21, 30]);
+  const cal = document.getElementById('daily-cal');
+  const days = [];
+  for (let i = 34; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const dateStr = d.toISOString().split('T')[0];
+    const dayNum = d.getDate();
+    const isToday = dateStr === today;
+    const isDone = loggedDates.has(dateStr);
+    const entry = (history || []).find(h => h.login_date === dateStr);
+    const sDay = entry?.streak_day;
+    const isMilestone = sDay && milestones.has(sDay);
+    let cls = 'daily-cal-day';
+    if (isDone)      cls += ' done';
+    if (isToday)     cls += ' today';
+    if (isMilestone) cls += ' milestone';
+    const title = isMilestone ? `Dia ${sDay} — marco!` : '';
+    days.push(`<div class="${cls}" title="${title}">${dayNum}</div>`);
+  }
+  cal.innerHTML = days.join('');
+
+  // Marcos
+  const streak = streakDay || 0;
+  [7, 14, 21, 30].forEach(ms => {
+    const el = document.getElementById(`daily-ms-${ms}`);
+    if (el) el.classList.toggle('reached', streak >= ms);
+  });
+
+  // Botão
+  const btn = document.getElementById('daily-claim-btn');
+  btn.textContent = granted ? 'Resgatar e continuar →' : 'Fechar';
+
+  document.getElementById('modal-daily-login').style.display = 'flex';
+
+  // Toast ao conceder
+  if (granted) {
+    setTimeout(() => {
+      showToast(`🔥 Dia ${streakDay} — +${xpGained} XP, +${coinsGained} coins!`);
+      showCoinPopup(coinsGained);
+    }, 600);
+  }
+}
+
+function closeDailyLogin() {
+  document.getElementById('modal-daily-login').style.display = 'none';
 }
 
 async function openShop() {

@@ -10,6 +10,7 @@ const SHOP_ITEMS = [
   { id: 'tag_campeao',     name: 'Campeão',             emoji: '🏆', desc: 'Chegou ao topo do ranking',     cost: 500,  rarity: 'épico',    type: 'tag'   },
   { id: 'tag_lendario',    name: 'Lendário',            emoji: '👑', desc: 'Acima de todos',                cost: 1000, rarity: 'lendário', type: 'tag'   },
   { id: 'tag_fundador',    name: 'Fundador',            emoji: '🫂', desc: 'Trouxe 5 amigos para o Nexora — exclusivo', cost: 0, rarity: 'lendário', type: 'tag', earnedOnly: true },
+  { id: 'tag_inavalavel', name: 'Inabalável',          emoji: '⚡', desc: '30 dias seguidos sem falhar — lenda absoluta', cost: 0, rarity: 'lendário', type: 'tag', earnedOnly: true },
   { id: 'theme_sakura',    name: 'Sakura',              emoji: '🌸', desc: 'Rosa e branco como as flores de cerejeira do Japão', cost: 50,  rarity: 'raro', type: 'theme', limited: true },
   { id: 'theme_namorados', name: 'Dia dos Namorados',   emoji: '💘', desc: 'Vermelho e dourado para celebrar o amor — 12 de junho', cost: 0, rarity: 'épico', type: 'theme', limited: true, ownerOnly: 'diegokareca2001@hotmail.com' },
 ];
