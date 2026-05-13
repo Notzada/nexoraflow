@@ -1136,7 +1136,7 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
         <div id="mob-username" style="font-family:var(--font-display);font-size:12px;font-weight:700;">—</div>
         <div id="mob-level" style="font-size:10px;color:var(--accent);">Nível 1</div>
       </div>
-      <button onclick="closeMobMenu();callDailyLogin(true)" title="Login Diário" style="background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.3);border-radius:8px;padding:6px 8px;cursor:pointer;color:var(--accent);font-size:14px;line-height:1;flex-shrink:0;" id="mob-daily-btn">📅</button>
+      <button onclick="event.stopPropagation();closeMobMenu();callDailyLogin(true)" title="Login Diário" style="background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.3);border-radius:8px;padding:6px 8px;cursor:pointer;color:var(--accent);font-size:14px;line-height:1;flex-shrink:0;" id="mob-daily-btn">📅</button>
       <div style="font-size:10px;color:var(--muted);margin-left:4px;">Ver perfil →</div>
     </div>
 
