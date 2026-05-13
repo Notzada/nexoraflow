@@ -1283,10 +1283,13 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
       </select>
       <div id="quick-cat-gasto-form" style="display:none;margin-top:8px;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px;gap:8px;display:none;flex-direction:column;">
         <div style="font-family:var(--font-display);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--accent);text-transform:uppercase;">Nova Categoria</div>
-        <div style="display:flex;gap:8px;">
-          <input id="quick-cat-emoji-gasto" class="modal-input" placeholder="🏷️" maxlength="4" style="width:56px;text-align:center;font-size:18px;padding:6px;flex-shrink:0;">
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div style="flex-shrink:0;">
+            <div id="quick-cat-emoji-btn" onclick="toggleEmojiPicker()" style="width:52px;height:40px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;user-select:none;" title="Escolher emoji">🏷️</div>
+          </div>
           <input id="quick-cat-name-gasto" class="modal-input" placeholder="Nome da categoria" style="flex:1;">
         </div>
+        <div id="emoji-picker-grid" style="display:none;flex-wrap:wrap;gap:4px;max-height:140px;overflow-y:auto;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:8px;"></div>
         <div style="display:flex;gap:8px;">
           <button onclick="closeQuickCat('gasto')" style="flex:1;padding:8px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:var(--font-display);font-size:10px;cursor:pointer;">Cancelar</button>
           <button onclick="confirmQuickCat('gasto')" style="flex:1;padding:8px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--font-display);font-size:10px;font-weight:700;cursor:pointer;">Criar →</button>
@@ -2251,8 +2254,11 @@ function openQuickCat(type) {
   const nameInput = document.getElementById(`quick-cat-name-${type}`);
   if (nameInput) { nameInput.value = ''; nameInput.focus(); }
   if (type === 'gasto') {
-    const emojiInput = document.getElementById('quick-cat-emoji-gasto');
-    if (emojiInput) emojiInput.value = '';
+    selectedEmoji = '🏷️';
+    const btn = document.getElementById('quick-cat-emoji-btn');
+    if (btn) btn.textContent = '🏷️';
+    const grid = document.getElementById('emoji-picker-grid');
+    if (grid) grid.style.display = 'none';
   }
 }
 
@@ -2261,14 +2267,38 @@ function closeQuickCat(type) {
   if (form) form.style.display = 'none';
 }
 
+const QUICK_EMOJIS = [
+  '🍔','🍕','🍜','☕','🛒','🚗','🚌','✈️','🏠','💡',
+  '💊','🏋️','🎮','🎬','📚','👕','👟','💄','🐶','🐱',
+  '🎁','🏖️','🎂','🎵','⚽','🔧','💻','📱','🧴','💰',
+];
+
+let selectedEmoji = '🏷️';
+
+function toggleEmojiPicker() {
+  const grid = document.getElementById('emoji-picker-grid');
+  if (!grid) return;
+  if (grid.style.display === 'flex') { grid.style.display = 'none'; return; }
+  grid.innerHTML = QUICK_EMOJIS.map(e =>
+    `<div onclick="pickEmoji('${e}')" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:8px;cursor:pointer;background:var(--bg);border:1px solid var(--border);">${e}</div>`
+  ).join('');
+  grid.style.display = 'flex';
+}
+
+function pickEmoji(e) {
+  selectedEmoji = e;
+  const btn = document.getElementById('quick-cat-emoji-btn');
+  if (btn) btn.textContent = e;
+  document.getElementById('emoji-picker-grid').style.display = 'none';
+}
+
 function confirmQuickCat(type) {
   const nameInput = document.getElementById(`quick-cat-name-${type}`);
   const name = nameInput?.value.trim();
   if (!name) { showToast('Digite um nome para a categoria.'); return; }
 
   if (type === 'gasto') {
-    const emojiInput = document.getElementById('quick-cat-emoji-gasto');
-    const emoji = emojiInput?.value.trim() || '🏷️';
+    const emoji = selectedEmoji || '🏷️';
     const existing = getCats();
     if (existing.find(c => c.name.toLowerCase() === name.toLowerCase())) {
       showToast('Categoria já existe.'); return;
