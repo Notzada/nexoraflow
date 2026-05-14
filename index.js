@@ -1178,6 +1178,12 @@ function getDailyLoginReward(streakDay) {
   return                       { xp: 10,  coins: 5   };
 }
 
+// Retorna data atual no fuso de Brasília (UTC-3)
+function brasilDate(offsetDays = 0) {
+  const ms = Date.now() - 3 * 60 * 60 * 1000 + offsetDays * 86400000;
+  return new Date(ms).toISOString().split('T')[0];
+}
+
 // Login diário — registra no calendário, calcula streak, concede recompensas escalantes
 app.post('/api/daily-login', express.json(), async (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -1185,7 +1191,7 @@ app.post('/api/daily-login', express.json(), async (req, res) => {
   const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
   if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = brasilDate();
 
   // Busca histórico dos últimos 35 dias
   const [{ data: profile }, { data: history }] = await Promise.all([
@@ -1209,7 +1215,7 @@ app.post('/api/daily-login', express.json(), async (req, res) => {
 
   if (!alreadyToday) {
     // Calcula streak: verifica se ontem tem registro
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const yesterday = brasilDate(-1);
     const lastEntry = (history || [])[0];
     if (lastEntry && lastEntry.login_date === yesterday) {
       streakDay = (lastEntry.streak_day || 1) + 1;
