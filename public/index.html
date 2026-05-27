@@ -1129,7 +1129,7 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
           <button class="modal-confirm" onclick="adminTestNotif('morning')" id="admin-notif-morning-btn" style="flex:1;min-width:140px;background:linear-gradient(135deg,#a855f7,#6366f1)">☀️ Hoje + Atrasadas</button>
           <button class="modal-confirm" onclick="adminTestNotif('evening')" id="admin-notif-evening-btn" style="flex:1;min-width:140px;background:linear-gradient(135deg,#0ea5e9,#6366f1)">🌙 Amanhã</button>
         </div>
-        <div id="admin-notif-result" style="margin-top:10px;font-size:11px;color:var(--muted);"></div>
+        <div id="admin-test-notif-result" style="margin-top:10px;font-size:11px;color:var(--muted);"></div>
       </div>
 
       <!-- Usuários recentes -->
@@ -4540,6 +4540,7 @@ async function adminSendNotif() {
   const btn = document.getElementById('admin-notif-btn');
   const result = document.getElementById('admin-notif-result');
   btn.disabled = true; btn.textContent = 'Enviando...';
+  result.textContent = '';
 
   const { data: { session } } = await supabaseClient.auth.getSession();
   try {
@@ -4549,14 +4550,17 @@ async function adminSendNotif() {
       body: JSON.stringify({ title, body }),
     });
     const data = await res.json();
-    if (data.sent !== undefined) {
-      result.textContent = `✅ ${data.sent} enviado(s)${data.failed ? `, ${data.failed} falha(s)` : ''}`;
-      document.getElementById('admin-notif-title').value = '';
-      document.getElementById('admin-notif-body').value  = '';
-      showToast(`📨 Notificação enviada para ${data.sent} dispositivo(s)!`);
-    }
-  } catch(e) { result.textContent = 'Erro ao enviar.'; }
-  btn.disabled = false; btn.textContent = '📨 Enviar para todos';
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    result.textContent = `✅ ${data.sent} enviado(s)${data.failed ? `, ${data.failed} falha(s)` : ''}`;
+    document.getElementById('admin-notif-title').value = '';
+    document.getElementById('admin-notif-body').value  = '';
+    showToast(`📨 Notificação enviada para ${data.sent} dispositivo(s)!`);
+  } catch(e) {
+    result.textContent = `❌ Erro: ${e.message}`;
+    showToast('Erro ao enviar notificação.');
+  } finally {
+    btn.disabled = false; btn.textContent = '📨 Enviar para todos';
+  }
 }
 
 async function adminCheckAchievements() {
@@ -4593,7 +4597,7 @@ async function adminCheckAchievements() {
 async function adminTestNotif(type) {
   const btnId  = type === 'morning' ? 'admin-notif-morning-btn' : 'admin-notif-evening-btn';
   const btn    = document.getElementById(btnId);
-  const result = document.getElementById('admin-notif-result');
+  const result = document.getElementById('admin-test-notif-result');
   const label  = type === 'morning' ? '☀️ Hoje + Atrasadas' : '🌙 Amanhã';
   btn.disabled = true;
   btn.textContent = '⏳ Enviando...';
@@ -4614,7 +4618,7 @@ async function adminTestNotif(type) {
       : `ℹ️ Nenhuma tarefa encontrada (${data.usersChecked} usuário(s) verificado(s)).`;
     showToast(result.textContent);
   } catch(e) {
-    result.textContent = `Erro: ${e.message}`;
+    result.textContent = `❌ Erro: ${e.message}`;
     showToast('Erro ao disparar notificações.');
   } finally {
     btn.disabled = false;

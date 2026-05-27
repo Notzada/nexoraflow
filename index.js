@@ -1542,26 +1542,34 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
 });
 
 app.post('/api/admin/notify', requireAdmin, express.json(), async (req, res) => {
-  const { title, body } = req.body;
-  if (!title || !body) return res.status(400).json({ error: 'title e body obrigatórios' });
+  res.setTimeout(25000, () => { if (!res.headersSent) res.status(504).json({ error: 'timeout' }); });
+  try {
+    const { title, body } = req.body;
+    if (!title || !body) return res.status(400).json({ error: 'title e body obrigatórios' });
 
-  const { data: subs } = await supabaseAdmin.from('push_subscriptions').select('*');
-  if (!subs || subs.length === 0) return res.json({ sent: 0 });
+    const { data: subs } = await supabaseAdmin.from('push_subscriptions').select('*');
+    if (!subs || subs.length === 0) return res.json({ sent: 0, failed: 0 });
 
-  const payload = JSON.stringify({ title, body });
-  let sent = 0, failed = 0;
-  for (const row of subs) {
-    try {
-      await webpush.sendNotification(row.subscription, payload);
-      sent++;
-    } catch(e) {
-      failed++;
-      if (e.statusCode === 410 || e.statusCode === 404)
-        await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', row.endpoint);
+    const payload = JSON.stringify({ title, body });
+    let sent = 0, failed = 0;
+    for (const row of subs) {
+      try {
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+        await Promise.race([webpush.sendNotification(row.subscription, payload), timeout]);
+        sent++;
+      } catch(e) {
+        failed++;
+        console.warn(`[ADMIN NOTIFY] falha: ${e.message} (status ${e.statusCode})`);
+        if (e.statusCode === 410 || e.statusCode === 404)
+          await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', row.endpoint);
+      }
     }
+    console.log(`[ADMIN NOTIFY] "${title}" → ${sent} enviados, ${failed} falhas`);
+    if (!res.headersSent) res.json({ sent, failed });
+  } catch (err) {
+    console.error('[ADMIN NOTIFY] erro geral:', err);
+    if (!res.headersSent) res.status(500).json({ error: err.message });
   }
-  console.log(`[ADMIN NOTIFY] "${title}" → ${sent} enviados, ${failed} falhas`);
-  res.json({ sent, failed });
 });
 
 // ============================================
@@ -1843,7 +1851,8 @@ app.post('/api/push/broadcast', express.json(), async (req, res) => {
   let sent = 0;
   for (const row of subs) {
     try {
-      await webpush.sendNotification(row.subscription, payload);
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+      await Promise.race([webpush.sendNotification(row.subscription, payload), timeout]);
       sent++;
     } catch (err) {
       if (err.statusCode === 410 || err.statusCode === 404) {
