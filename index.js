@@ -2319,7 +2319,11 @@ app.listen(PORT, async () => {
   console.log(`📊 Dashboard: http://localhost:${PORT}`);
   console.log(`🔧 Health:    http://localhost:${PORT}/health\n`);
   if (WEBHOOK_URL) {
-    await registerWebhook();
+    try {
+      await registerWebhook();
+    } catch (e) {
+      console.warn('⚠️  Falha ao registrar webhook do Telegram (servidor continua rodando):', e.message);
+    }
   } else {
     console.log('⚠️  WEBHOOK_URL não definido — bot Telegram inativo.');
     console.log('   Use ngrok para expor o servidor e defina WEBHOOK_URL no .env\n');
