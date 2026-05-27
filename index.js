@@ -128,6 +128,15 @@ async function linkTelegramByEmail(chatId, email) {
   return data;
 }
 
+// Retorna um Date com hora de meio-dia no fuso de Brasília (UTC-3), com offset em dias
+function brasiliaDate(offsetDays = 0) {
+  const now = new Date();
+  const brasilia = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  brasilia.setDate(brasilia.getDate() + offsetDays);
+  brasilia.setHours(12, 0, 0, 0);
+  return brasilia;
+}
+
 // ============================================
 // TELEGRAM: registrar webhook
 // ============================================
@@ -276,10 +285,12 @@ function tryRegex(text) {
                           .replace(/\.$/, '').trim();
     const category     = detectCategory(description + ' ' + t);
     const installments = detectInstallments(t);
-    console.log('⚡ [REGEX] expense →', { amount, description, category, installments });
+    const dateOffset   = /\banteontem\b/i.test(t) ? -2 : /\bontem\b/i.test(t) ? -1 : 0;
+    const expenseDate  = brasiliaDate(dateOffset);
+    console.log('⚡ [REGEX] expense →', { amount, description, category, installments, expenseDate });
     return {
       type: 'expense',
-      data: { description, amount, category, installments },
+      data: { description, amount, category, installments, date: expenseDate },
       reply: installments > 1
         ? `💳 *${description}* — R$${amount.toFixed(2)} em *${installments}x de R$${(amount/installments).toFixed(2)}* registrado! (${category})`
         : `💸 *R$${amount.toFixed(2)}* em *${description}* registrado! (${category})`,
@@ -412,13 +423,15 @@ async function interpretMessage(text) {
 // ============================================
 // SUPABASE: salvar (com user_id)
 // ============================================
-async function saveExpense({ description, amount, category, installments = 1 }, userId) {
+async function saveExpense({ description, amount, category, installments = 1, date }, userId) {
   const n = parseInt(installments, 10) || 1;
+  const expenseDate = date || brasiliaDate(0);
 
   if (n <= 1) {
     const { error } = await supabaseAdmin.from('expenses').insert([{
       description, amount: parseFloat(amount), category: category || 'Outros',
-      source: 'telegram', installments: 1, installment_current: 1, user_id: userId
+      source: 'telegram', installments: 1, installment_current: 1, user_id: userId,
+      created_at: expenseDate.toISOString()
     }]);
     if (error) console.error('ERRO AO SALVAR GASTO:', error);
     else console.log('✅ Gasto salvo:', description, amount);
