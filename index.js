@@ -1633,59 +1633,67 @@ app.post('/api/admin/check-achievements', requireAdmin, async (req, res) => {
 
 // Disparo manual de notificações de tarefas (para testes)
 app.post('/api/admin/test-notifications', requireAdmin, express.json(), async (req, res) => {
-  const { type = 'morning' } = req.body || {};
-  const today     = getBrasiliaToday(0);
-  const tomorrow  = getBrasiliaToday(1);
-  const userIds   = await getSubscribedUserIds();
-  const report    = [];
+  try {
+    const { type = 'morning' } = req.body || {};
+    const today     = getBrasiliaToday(0);
+    const tomorrow  = getBrasiliaToday(1);
+    const userIds   = await getSubscribedUserIds();
+    const report    = [];
 
-  for (const userId of userIds) {
-    const sent = [];
+    for (const userId of userIds) {
+      const sent = [];
+      try {
+        if (type === 'morning' || type === 'all') {
+          const { data: todayTasks } = await supabaseAdmin
+            .from('tasks').select('text')
+            .eq('user_id', userId).eq('done', false).eq('due_date', today);
 
-    if (type === 'morning' || type === 'all') {
-      const { data: todayTasks } = await supabaseAdmin
-        .from('tasks').select('text')
-        .eq('user_id', userId).eq('done', false).eq('due_date', today);
+          const { data: overdueTasks } = await supabaseAdmin
+            .from('tasks').select('text')
+            .eq('user_id', userId).eq('done', false)
+            .lt('due_date', today).not('due_date', 'is', null);
 
-      const { data: overdueTasks } = await supabaseAdmin
-        .from('tasks').select('text')
-        .eq('user_id', userId).eq('done', false)
-        .lt('due_date', today).not('due_date', 'is', null);
+          if (todayTasks?.length) {
+            const n = todayTasks.length;
+            await sendPushToUser(userId, '📋 Tarefas para hoje',
+              n === 1 ? `"${todayTasks[0].text}" vence hoje — bora lá! 💪`
+                      : `${n} tarefas vencem hoje. Você consegue! 💪`);
+            sent.push(`hoje: ${n} tarefa(s)`);
+          }
+          if (overdueTasks?.length) {
+            const n = overdueTasks.length;
+            await sendPushToUser(userId, '⚠️ Tarefas atrasadas',
+              n === 1 ? `"${overdueTasks[0].text}" está atrasada. Não deixe acumular!`
+                      : `${n} tarefas estão atrasadas. Hora de resolver! 🔥`);
+            sent.push(`atrasadas: ${n} tarefa(s)`);
+          }
+        }
 
-      if (todayTasks?.length) {
-        const n = todayTasks.length;
-        await sendPushToUser(userId, '📋 Tarefas para hoje',
-          n === 1 ? `"${todayTasks[0].text}" vence hoje — bora lá! 💪`
-                  : `${n} tarefas vencem hoje. Você consegue! 💪`);
-        sent.push(`hoje: ${n} tarefa(s)`);
+        if (type === 'evening' || type === 'all') {
+          const { data: tomorrowTasks } = await supabaseAdmin
+            .from('tasks').select('text')
+            .eq('user_id', userId).eq('done', false).eq('due_date', tomorrow);
+
+          if (tomorrowTasks?.length) {
+            const n = tomorrowTasks.length;
+            await sendPushToUser(userId, '🔔 Lembrete para amanhã',
+              n === 1 ? `"${tomorrowTasks[0].text}" vence amanhã. Planeje-se! 📅`
+                      : `${n} tarefas vencem amanhã. Não deixe para a última hora! 📅`);
+            sent.push(`amanhã: ${n} tarefa(s)`);
+          }
+        }
+      } catch (userErr) {
+        console.error(`[TEST-NOTIF] Erro ao processar userId ${userId}:`, userErr.message);
+        sent.push(`erro: ${userErr.message}`);
       }
-      if (overdueTasks?.length) {
-        const n = overdueTasks.length;
-        await sendPushToUser(userId, '⚠️ Tarefas atrasadas',
-          n === 1 ? `"${overdueTasks[0].text}" está atrasada. Não deixe acumular!`
-                  : `${n} tarefas estão atrasadas. Hora de resolver! 🔥`);
-        sent.push(`atrasadas: ${n} tarefa(s)`);
-      }
+      report.push({ userId, sent: sent.length ? sent : ['nenhuma notificação enviada'] });
     }
 
-    if (type === 'evening' || type === 'all') {
-      const { data: tomorrowTasks } = await supabaseAdmin
-        .from('tasks').select('text')
-        .eq('user_id', userId).eq('done', false).eq('due_date', tomorrow);
-
-      if (tomorrowTasks?.length) {
-        const n = tomorrowTasks.length;
-        await sendPushToUser(userId, '🔔 Lembrete para amanhã',
-          n === 1 ? `"${tomorrowTasks[0].text}" vence amanhã. Planeje-se! 📅`
-                  : `${n} tarefas vencem amanhã. Não deixe para a última hora! 📅`);
-        sent.push(`amanhã: ${n} tarefa(s)`);
-      }
-    }
-
-    report.push({ userId, sent: sent.length ? sent : ['nenhuma notificação enviada'] });
+    return res.json({ usersChecked: userIds.length, report });
+  } catch (err) {
+    console.error('[TEST-NOTIF] Erro geral:', err.message);
+    return res.status(500).json({ error: err.message });
   }
-
-  res.json({ usersChecked: userIds.length, report });
 });
 
 // ============================================
