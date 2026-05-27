@@ -1632,7 +1632,7 @@ app.post('/api/admin/check-achievements', requireAdmin, async (req, res) => {
 });
 
 // Disparo manual de notificações de tarefas (para testes)
-app.post('/api/admin/test-notifications', requireAdmin, async (req, res) => {
+app.post('/api/admin/test-notifications', requireAdmin, express.json(), async (req, res) => {
   const { type = 'morning' } = req.body || {};
   const today     = getBrasiliaToday(0);
   const tomorrow  = getBrasiliaToday(1);

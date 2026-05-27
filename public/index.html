@@ -4527,29 +4527,35 @@ async function adminCheckAchievements() {
 }
 
 async function adminTestNotif(type) {
-  const btnId = type === 'morning' ? 'admin-notif-morning-btn' : 'admin-notif-evening-btn';
+  const btnId  = type === 'morning' ? 'admin-notif-morning-btn' : 'admin-notif-evening-btn';
   const btn    = document.getElementById(btnId);
   const result = document.getElementById('admin-notif-result');
+  const label  = type === 'morning' ? '☀️ Hoje + Atrasadas' : '🌙 Amanhã';
   btn.disabled = true;
   btn.textContent = '⏳ Enviando...';
   result.textContent = '';
 
-  const { data: { session } } = await supabaseClient.auth.getSession();
   try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
     const res  = await fetch('/api/admin/test-notifications', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ type }),
     });
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     const total = data.report?.reduce((s, u) => s + (u.sent[0] === 'nenhuma notificação enviada' ? 0 : u.sent.length), 0) || 0;
     result.textContent = total > 0
       ? `✅ ${total} notificação(ões) enviada(s) para ${data.usersChecked} usuário(s).`
-      : `ℹ️ Nenhuma tarefa encontrada para notificar (${data.usersChecked} usuário(s) verificado(s)).`;
+      : `ℹ️ Nenhuma tarefa encontrada (${data.usersChecked} usuário(s) verificado(s)).`;
     showToast(result.textContent);
-  } catch(e) { result.textContent = 'Erro ao disparar notificações.'; }
-  btn.disabled = false;
-  btn.textContent = type === 'morning' ? '☀️ Hoje + Atrasadas' : '🌙 Amanhã';
+  } catch(e) {
+    result.textContent = `Erro: ${e.message}`;
+    showToast('Erro ao disparar notificações.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
 }
 
 async function loadProfile() {
