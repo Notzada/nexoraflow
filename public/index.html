@@ -1048,6 +1048,11 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
           <!-- Input oculto que guarda o valor -->
           <input type="hidden" id="set-emoji" value="🧑">
           <input type="hidden" id="set-tg">
+          <div class="settings-label">Notificações push</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <button id="push-toggle-btn" onclick="togglePushSubscription()" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border2);background:rgba(168,85,247,.12);color:var(--accent);font-family:var(--font-display);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;">⏳ Verificando...</button>
+            <span id="push-status-label" style="font-size:11px;color:var(--muted);"></span>
+          </div>
           <div class="settings-actions">
             <button class="settings-save" onclick="saveSettings()">Salvar</button>
             <button class="settings-reset" onclick="signOut()">Sair da conta</button>
@@ -2060,6 +2065,7 @@ function updateSidebarProfile() {
 function loadSettings() {
   document.getElementById('set-email').value    = currentUser?.email || '';
   document.getElementById('set-username').value = currentProfile?.username || '';
+  updatePushStatusUI();
   const av = currentProfile?.avatar_emoji || '🧑';
   document.getElementById('set-emoji').value = av;
   // Atualiza preview do botão
@@ -3239,6 +3245,64 @@ async function registerPushNotifications() {
       body: JSON.stringify({ subscription: sub }),
     });
   } catch(e) { console.warn('Push registration failed:', e); }
+}
+
+async function updatePushStatusUI() {
+  const btn   = document.getElementById('push-toggle-btn');
+  const label = document.getElementById('push-status-label');
+  if (!btn) return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    btn.textContent = '❌ Não suportado'; btn.disabled = true;
+    if (label) label.textContent = 'Seu browser não suporta notificações push.';
+    return;
+  }
+  const permission = Notification.permission;
+  const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+  const sub = reg ? await reg.pushManager.getSubscription() : null;
+  if (permission === 'denied') {
+    btn.textContent = '🔕 Bloqueadas'; btn.disabled = true;
+    if (label) label.textContent = 'Desbloqueie nas configurações do browser.';
+  } else if (sub) {
+    btn.textContent = '🔔 Desativar'; btn.style.color = '#22c55e'; btn.style.borderColor = '#22c55e';
+    if (label) label.textContent = 'Notificações ativas.';
+  } else {
+    btn.textContent = '🔕 Ativar notificações'; btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--border2)';
+    if (label) label.textContent = 'Clique para receber lembretes de tarefas.';
+  }
+}
+
+async function togglePushSubscription() {
+  const btn = document.getElementById('push-toggle-btn');
+  btn.disabled = true; btn.textContent = '⏳ Aguarde...';
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) {
+      await existing.unsubscribe();
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      await fetch('/api/push/unsubscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: existing.endpoint }),
+      });
+      showToast('🔕 Notificações desativadas.');
+    } else {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') { showToast('Permissão negada pelo browser.'); return; }
+      const keyRes = await fetch('/api/push/vapid-key');
+      const { publicKey } = await keyRes.json();
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ subscription: sub }),
+      });
+      showToast('🔔 Notificações ativadas!');
+    }
+  } catch(e) { showToast('Erro: ' + e.message); }
+  btn.disabled = false;
+  await updatePushStatusUI();
 }
 
 function urlBase64ToUint8Array(base64String) {
