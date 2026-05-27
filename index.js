@@ -1633,6 +1633,7 @@ app.post('/api/admin/check-achievements', requireAdmin, async (req, res) => {
 
 // Disparo manual de notificações de tarefas (para testes)
 app.post('/api/admin/test-notifications', requireAdmin, express.json(), async (req, res) => {
+  res.setTimeout(30000, () => res.status(504).json({ error: 'Timeout — serviço de push demorou demais.' }));
   try {
     const { type = 'morning' } = req.body || {};
     const today     = getBrasiliaToday(0);
@@ -1832,9 +1833,11 @@ async function sendPushToUser(userId, title, body) {
   const payload = JSON.stringify({ title, body });
   for (const row of subs) {
     try {
-      await webpush.sendNotification(row.subscription, payload);
+      await Promise.race([
+        webpush.sendNotification(row.subscription, payload),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('push timeout')), 8000))
+      ]);
     } catch (err) {
-      // Subscription expirada — remove
       if (err.statusCode === 410 || err.statusCode === 404) {
         await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', row.endpoint);
       }
