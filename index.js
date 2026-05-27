@@ -1771,6 +1771,40 @@ app.get('/api/push/vapid-key', (req, res) => {
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
 });
 
+// Diagnóstico: testa push direto para o usuário autenticado
+app.post('/api/push/test-me', express.json(), async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { data: subs } = await supabaseAdmin
+    .from('push_subscriptions').select('subscription, endpoint').eq('user_id', user.id);
+
+  if (!subs || subs.length === 0)
+    return res.json({ ok: false, reason: 'Nenhuma subscription encontrada para este usuário.' });
+
+  const payload = JSON.stringify({ title: '✅ Teste NexoraFlow', body: 'Se você está vendo isso, as notificações funcionam!' });
+  const results = [];
+
+  for (const row of subs) {
+    try {
+      const result = await Promise.race([
+        webpush.sendNotification(row.subscription, payload),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout após 10s')), 10000))
+      ]);
+      results.push({ endpoint: row.endpoint.slice(-30), status: result?.statusCode || 201, ok: true });
+    } catch (err) {
+      results.push({ endpoint: row.endpoint.slice(-30), ok: false, error: err.message, statusCode: err.statusCode });
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', row.endpoint);
+      }
+    }
+  }
+
+  res.json({ ok: true, subscriptions: subs.length, results });
+});
+
 app.post('/api/push/subscribe', express.json(), async (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
