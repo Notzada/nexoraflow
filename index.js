@@ -936,6 +936,9 @@ app.post('/webhook', async (req, res) => {
     case 'expense':
       await saveExpense(interpreted.data, userId);
       await notifyAchievements(chatId, userId);
+      if (interpreted.data.category) {
+        await checkSpendingLimit(userId, interpreted.data.category);
+      }
       break;
 
     case 'delete_expense':
@@ -1774,43 +1777,138 @@ async function sendPushToUser(userId, title, body) {
   }
 }
 
-// Cron: todo dia às 08:00 (horário de Brasília = UTC-3 → 11:00 UTC)
-cron.schedule('0 11 * * *', async () => {
-  console.log('[PUSH] Disparando notificações de tarefas do dia...');
-  const today = new Date().toISOString().split('T')[0];
+// Retorna a data em Brasília (UTC-3) no formato YYYY-MM-DD, com offset em dias
+function getBrasiliaToday(offsetDays = 0) {
+  const now = new Date();
+  const b = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  b.setUTCDate(b.getUTCDate() + offsetDays);
+  return b.toISOString().split('T')[0];
+}
 
-  // Busca todos os usuários com push subscription
+// Retorna IDs de todos os usuários com push subscription ativa
+async function getSubscribedUserIds() {
   const { data: subs } = await supabaseAdmin
     .from('push_subscriptions')
     .select('user_id')
     .order('user_id');
+  if (!subs || subs.length === 0) return [];
+  return [...new Set(subs.map(s => s.user_id))];
+}
 
-  if (!subs || subs.length === 0) return;
+// ============================================
+// CRON 1 — 08:00 BRT: tarefas de hoje + atrasadas
+// ============================================
+cron.schedule('0 11 * * *', async () => {
+  console.log('[PUSH] Cron matutino — tarefas do dia e atrasadas...');
+  const today     = getBrasiliaToday(0);
+  const yesterday = getBrasiliaToday(-1);
+  const userIds   = await getSubscribedUserIds();
+  if (!userIds.length) return;
 
-  const userIds = [...new Set(subs.map(s => s.user_id))];
+  for (const userId of userIds) {
+    // Tarefas vencendo HOJE
+    const { data: todayTasks } = await supabaseAdmin
+      .from('tasks')
+      .select('text')
+      .eq('user_id', userId)
+      .eq('done', false)
+      .eq('due_date', today);
+
+    // Tarefas ATRASADAS (due_date anterior a hoje, não concluídas)
+    const { data: overdueTasks } = await supabaseAdmin
+      .from('tasks')
+      .select('text')
+      .eq('user_id', userId)
+      .eq('done', false)
+      .lt('due_date', today)
+      .not('due_date', 'is', null);
+
+    if (todayTasks?.length) {
+      const n = todayTasks.length;
+      await sendPushToUser(userId, '📋 Tarefas para hoje',
+        n === 1
+          ? `"${todayTasks[0].text}" vence hoje — bora lá! 💪`
+          : `${n} tarefas vencem hoje. Você consegue! 💪`
+      );
+    }
+
+    if (overdueTasks?.length) {
+      const n = overdueTasks.length;
+      await sendPushToUser(userId, '⚠️ Tarefas atrasadas',
+        n === 1
+          ? `"${overdueTasks[0].text}" está atrasada. Não deixe acumular!`
+          : `${n} tarefas estão atrasadas. Hora de resolver! 🔥`
+      );
+    }
+  }
+  console.log(`[PUSH] Cron matutino concluído para ${userIds.length} usuários.`);
+}, { timezone: 'America/Sao_Paulo' });
+
+// ============================================
+// CRON 2 — 20:00 BRT: tarefas vencendo amanhã
+// ============================================
+cron.schedule('0 23 * * *', async () => {
+  console.log('[PUSH] Cron noturno — tarefas para amanhã...');
+  const tomorrow = getBrasiliaToday(1);
+  const userIds  = await getSubscribedUserIds();
+  if (!userIds.length) return;
 
   for (const userId of userIds) {
     const { data: tasks } = await supabaseAdmin
       .from('tasks')
-      .select('id, description')
+      .select('text')
       .eq('user_id', userId)
       .eq('done', false)
-      .gte('created_at', today + 'T00:00:00')
-      .lte('created_at', today + 'T23:59:59');
+      .eq('due_date', tomorrow);
 
-    if (!tasks || tasks.length === 0) continue;
-
-    const count = tasks.length;
-    await sendPushToUser(
-      userId,
-      '📋 Tarefas do dia',
-      count === 1
-        ? `1 tarefa pendente: "${tasks[0].description}" — bora lá! 💪`
-        : `${count} tarefas pendentes hoje. Você consegue! 💪`
+    if (!tasks?.length) continue;
+    const n = tasks.length;
+    await sendPushToUser(userId, '🔔 Lembrete para amanhã',
+      n === 1
+        ? `"${tasks[0].text}" vence amanhã. Planeje-se! 📅`
+        : `${n} tarefas vencem amanhã. Não deixe para a última hora! 📅`
     );
   }
-  console.log(`[PUSH] Notificações enviadas para ${userIds.length} usuários.`);
+  console.log(`[PUSH] Cron noturno concluído para ${userIds.length} usuários.`);
 }, { timezone: 'America/Sao_Paulo' });
+
+// ============================================
+// HELPER — verifica limite de gastos por categoria e avisa se ≥ 80%
+// ============================================
+async function checkSpendingLimit(userId, category) {
+  // Busca meta de limite para essa categoria
+  const { data: goal } = await supabaseAdmin
+    .from('goals')
+    .select('id, name, target')
+    .eq('user_id', userId)
+    .ilike('name', `Limite ${category}`)
+    .single();
+
+  if (!goal || !goal.target) return;
+
+  // Total gasto nessa categoria no mês atual (em Brasília)
+  const firstDay = getBrasiliaToday(0).slice(0, 7) + '-01'; // YYYY-MM-01
+  const { data: expenses } = await supabaseAdmin
+    .from('expenses')
+    .select('amount')
+    .eq('user_id', userId)
+    .eq('category', category)
+    .gte('created_at', firstDay + 'T00:00:00');
+
+  const total  = (expenses || []).reduce((s, e) => s + parseFloat(e.amount), 0);
+  const pct    = total / parseFloat(goal.target);
+
+  if (pct >= 1) {
+    await sendPushToUser(userId, `🚨 Limite estourado — ${category}`,
+      `Você gastou R$${total.toFixed(2)} de R$${parseFloat(goal.target).toFixed(2)} no limite de ${category}.`
+    );
+  } else if (pct >= 0.8) {
+    const remaining = parseFloat(goal.target) - total;
+    await sendPushToUser(userId, `⚠️ Quase no limite — ${category}`,
+      `${Math.round(pct * 100)}% do limite atingido. Restam R$${remaining.toFixed(2)} em ${category}.`
+    );
+  }
+}
 
 // ============================================
 // MANIFEST DINÂMICO — retorna ícone conforme o tema ativo
