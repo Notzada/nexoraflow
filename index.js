@@ -128,13 +128,20 @@ async function linkTelegramByEmail(chatId, email) {
   return data;
 }
 
-// Retorna um Date com hora de meio-dia no fuso de Brasília (UTC-3), com offset em dias
-function brasiliaDate(offsetDays = 0) {
+// Retorna um Date no fuso de Brasília (UTC-3), com offset em dias e hora opcional (HH:MM)
+function brasiliaDate(offsetDays = 0, timeStr = null) {
   const now = new Date();
-  const brasilia = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-  brasilia.setDate(brasilia.getDate() + offsetDays);
-  brasilia.setHours(12, 0, 0, 0);
-  return brasilia;
+  // Calcula data atual em Brasília subtraindo 3h do UTC
+  const b = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  b.setUTCDate(b.getUTCDate() + offsetDays);
+  // Se vier horário explícito da mensagem, usa ele; senão padrão 12:00 BRT = 15:00 UTC
+  if (timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    b.setUTCHours(h + 3, m || 0, 0, 0); // converte BRT→UTC somando 3h
+  } else {
+    b.setUTCHours(15, 0, 0, 0); // 15:00 UTC = 12:00 BRT
+  }
+  return b;
 }
 
 // ============================================
@@ -166,6 +173,8 @@ const CATEGORY_MAP = {
     /farm[áa]cia/i, /rem[eé]dio/i, /medica(mento)?/i, /m[eé]dico/i,
     /consulta/i, /exame/i, /plano de sa[úu]de/i, /hospital/i, /cl[ií]nica/i,
     /dentista/i, /psic[oó]logo/i, /suplemento/i,
+    /cabelo/i, /corte de cabelo/i, /barbearia/i, /sal[aã]o/i, /manicure/i,
+    /pedicure/i, /est[eé]tica/i, /depila[çc][aã]o/i, /massagem/i,
   ],
   Lazer: [
     /cinema/i, /teatro/i, /show/i, /bar/i, /balada/i, /festa/i,
@@ -286,7 +295,8 @@ function tryRegex(text) {
     const category     = detectCategory(description + ' ' + t);
     const installments = detectInstallments(t);
     const dateOffset   = /\banteontem\b/i.test(t) ? -2 : /\bontem\b/i.test(t) ? -1 : 0;
-    const expenseDate  = brasiliaDate(dateOffset);
+    const timeMatch    = t.match(/\b[àa]s?\s+(\d{1,2}:\d{2})/i);
+    const expenseDate  = brasiliaDate(dateOffset, timeMatch ? timeMatch[1] : null);
     console.log('⚡ [REGEX] expense →', { amount, description, category, installments, expenseDate });
     return {
       type: 'expense',
@@ -371,6 +381,8 @@ Analise a mensagem abaixo e retorne APENAS um JSON válido (sem markdown, sem ex
 Mensagem: "${text}"
 
 Categorias de gastos válidas: Alimentação, Transporte, Lazer, Saúde, Casa, Educação, Roupas, Outros
+Exemplos de Saúde: remédio, médico, dentista, cabelo, barbearia, salão, manicure, estética, massagem.
+Exemplos de Casa: aluguel, condomínio, luz, água, internet, gás, reforma.
 
 Se a mensagem mencionar parcelamento (ex: "em 3x", "parcelado em 6 vezes"), extraia o número de parcelas.
 Se mencionar remoção/exclusão de gasto, use type "delete_expense" com keyword do que remover.

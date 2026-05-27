@@ -1333,7 +1333,7 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
           </div>
           <input id="quick-cat-name-gasto" class="modal-input" placeholder="Nome da categoria" style="flex:1;">
         </div>
-        <div id="emoji-picker-grid" style="display:none;flex-wrap:wrap;gap:4px;max-height:140px;overflow-y:auto;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:8px;"></div>
+        <div id="quick-cat-emoji-grid" style="display:none;flex-wrap:wrap;gap:4px;max-height:140px;overflow-y:auto;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:8px;"></div>
         <div style="display:flex;gap:8px;">
           <button onclick="closeQuickCat('gasto')" style="flex:1;padding:8px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:var(--font-display);font-size:10px;cursor:pointer;">Cancelar</button>
           <button onclick="confirmQuickCat('gasto')" style="flex:1;padding:8px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--font-display);font-size:10px;font-weight:700;cursor:pointer;">Criar →</button>
@@ -2360,7 +2360,7 @@ function openQuickCat(type) {
     selectedEmoji = '🏷️';
     const btn = document.getElementById('quick-cat-emoji-btn');
     if (btn) btn.textContent = '🏷️';
-    const grid = document.getElementById('emoji-picker-grid');
+    const grid = document.getElementById('quick-cat-emoji-grid');
     if (grid) grid.style.display = 'none';
   }
 }
@@ -2382,7 +2382,7 @@ const QUICK_EMOJIS = [
 let selectedEmoji = '🏷️';
 
 function toggleEmojiPicker() {
-  const grid = document.getElementById('emoji-picker-grid');
+  const grid = document.getElementById('quick-cat-emoji-grid');
   if (!grid) return;
   if (grid.style.display === 'flex') { grid.style.display = 'none'; return; }
   grid.innerHTML = QUICK_EMOJIS.map(e =>
@@ -2395,7 +2395,7 @@ function pickEmoji(e) {
   selectedEmoji = e;
   const btn = document.getElementById('quick-cat-emoji-btn');
   if (btn) btn.textContent = e;
-  document.getElementById('emoji-picker-grid').style.display = 'none';
+  document.getElementById('quick-cat-emoji-grid').style.display = 'none';
 }
 
 function confirmQuickCat(type) {
