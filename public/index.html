@@ -2101,7 +2101,11 @@ function openAvatarPicker() {
 
 function selectEmoji(e) {
   document.getElementById('set-emoji').value = e;
-  document.getElementById('avatar-preview-btn').textContent = e;
+  const btn = document.getElementById('avatar-preview-btn');
+  btn.textContent = e;
+  btn.style.backgroundImage = '';
+  btn.style.backgroundSize  = '';
+  btn.style.backgroundPosition = '';
   document.getElementById('avatar-upload-preview').textContent = '📷';
   closeModal('modal-avatar');
 }
