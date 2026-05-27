@@ -1117,6 +1117,16 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
         <div id="admin-ach-details" style="margin-top:12px;font-size:11px;color:var(--muted);max-height:200px;overflow-y:auto;"></div>
       </div>
 
+      <div class="chart-card">
+        <div class="card-title">🔔 Testar Notificações</div>
+        <div class="card-sub" style="margin-bottom:12px">Dispara as notificações de tarefas agora, sem esperar o horário automático.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="modal-confirm" onclick="adminTestNotif('morning')" id="admin-notif-morning-btn" style="flex:1;min-width:140px;background:linear-gradient(135deg,#a855f7,#6366f1)">☀️ Hoje + Atrasadas</button>
+          <button class="modal-confirm" onclick="adminTestNotif('evening')" id="admin-notif-evening-btn" style="flex:1;min-width:140px;background:linear-gradient(135deg,#0ea5e9,#6366f1)">🌙 Amanhã</button>
+        </div>
+        <div id="admin-notif-result" style="margin-top:10px;font-size:11px;color:var(--muted);"></div>
+      </div>
+
       <!-- Usuários recentes -->
       <div class="chart-card">
         <div class="card-title">👥 Todos os Usuários</div>
@@ -4514,6 +4524,32 @@ async function adminCheckAchievements() {
     showToast(`🏅 ${data.totalGranted} conquistas concedidas para ${data.processed} usuários!`);
   } catch(e) { result.textContent = 'Erro ao verificar.'; }
   btn.disabled = false; btn.textContent = '🔍 Verificar todos os usuários';
+}
+
+async function adminTestNotif(type) {
+  const btnId = type === 'morning' ? 'admin-notif-morning-btn' : 'admin-notif-evening-btn';
+  const btn    = document.getElementById(btnId);
+  const result = document.getElementById('admin-notif-result');
+  btn.disabled = true;
+  btn.textContent = '⏳ Enviando...';
+  result.textContent = '';
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  try {
+    const res  = await fetch('/api/admin/test-notifications', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type }),
+    });
+    const data = await res.json();
+    const total = data.report?.reduce((s, u) => s + (u.sent[0] === 'nenhuma notificação enviada' ? 0 : u.sent.length), 0) || 0;
+    result.textContent = total > 0
+      ? `✅ ${total} notificação(ões) enviada(s) para ${data.usersChecked} usuário(s).`
+      : `ℹ️ Nenhuma tarefa encontrada para notificar (${data.usersChecked} usuário(s) verificado(s)).`;
+    showToast(result.textContent);
+  } catch(e) { result.textContent = 'Erro ao disparar notificações.'; }
+  btn.disabled = false;
+  btn.textContent = type === 'morning' ? '☀️ Hoje + Atrasadas' : '🌙 Amanhã';
 }
 
 async function loadProfile() {
