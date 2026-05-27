@@ -694,7 +694,13 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
     <div class="auth-label">Nome de usuário</div>
     <input class="auth-input" id="setup-username" placeholder="ex: Diego, xMendes, Hawk..." maxlength="20" onkeydown="if(event.key==='Enter')createProfile()">
     <div class="auth-label">Avatar (emoji)</div>
-    <input class="auth-input" id="setup-emoji" placeholder="🧑" maxlength="2" style="width:80px">
+    <div style="position:relative;">
+      <button type="button" id="setup-avatar-btn" onclick="toggleSetupAvatarPicker(event)"
+        style="width:64px;height:64px;font-size:32px;background:rgba(168,85,247,.1);border:2px solid rgba(168,85,247,.3);border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .2s;">🧑</button>
+      <div id="setup-avatar-grid"
+        style="display:none;position:absolute;top:72px;left:0;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:10px;grid-template-columns:repeat(5,1fr);gap:6px;width:230px;box-shadow:0 8px 32px rgba(0,0,0,.5);"></div>
+    </div>
+    <input type="hidden" id="setup-emoji" value="🧑">
     <div class="auth-error" id="setup-error"></div>
     <button class="auth-btn" onclick="createProfile()">Entrar no jogo →</button>
   </div>
@@ -2099,6 +2105,33 @@ function selectEmoji(e) {
   document.getElementById('avatar-upload-preview').textContent = '📷';
   closeModal('modal-avatar');
 }
+
+function toggleSetupAvatarPicker(event) {
+  event.stopPropagation();
+  const grid = document.getElementById('setup-avatar-grid');
+  const btn  = document.getElementById('setup-avatar-btn');
+  if (grid.style.display === 'grid') { grid.style.display = 'none'; return; }
+  grid.innerHTML = AVATAR_EMOJIS.map(e =>
+    `<div onclick="pickSetupAvatar('${e}')" class="emoji-pick-btn">${e}</div>`
+  ).join('');
+  grid.style.display = 'grid';
+  btn.style.borderColor = 'rgba(168,85,247,.8)';
+}
+
+function pickSetupAvatar(e) {
+  document.getElementById('setup-emoji').value = e;
+  document.getElementById('setup-avatar-btn').textContent = e;
+  document.getElementById('setup-avatar-grid').style.display = 'none';
+  document.getElementById('setup-avatar-btn').style.borderColor = 'rgba(168,85,247,.3)';
+}
+
+document.addEventListener('click', () => {
+  const grid = document.getElementById('setup-avatar-grid');
+  if (grid && grid.style.display === 'grid') {
+    grid.style.display = 'none';
+    document.getElementById('setup-avatar-btn').style.borderColor = 'rgba(168,85,247,.3)';
+  }
+});
 
 async function handleAvatarUpload(event) {
   const file = event.target.files[0];
