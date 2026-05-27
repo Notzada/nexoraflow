@@ -203,7 +203,7 @@ const QUERY_KEYWORDS = [
 const INSTALLMENT_REGEX = /(?:parcelado\s+)?em\s+(\d+)\s*[xX×]|(\d+)\s*[xX×]|(\d+)\s+(?:vezes|parcelas?)/i;
 
 // Gasto principal
-const EXPENSE_REGEX     = /(?:gastei|paguei|comprei|custou|cobrou|desembolsei|gasto de|gasto com)\s+(?:r\$\s*)?(\d+[\.,]?\d*)\s*(?:reais?|r\$)?\s*(?:(?:com|de|no?|na|em(?!\s+\d)|por|pelo?|pela)\s+(.+))?/i;
+const EXPENSE_REGEX     = /(?:gastei|paguei|comprei|custou|cobrou|desembolsei|gasto de|gasto com)\s+(?:r\$\s*)?(\d+[\.,]?\d*)\s*(?:reais?|r\$)?\s*(?:(?:ontem|hoje|anteontem|essa semana)?\s*(?:com|de|no?|na|em(?!\s+\d)|por|pelo?|pela)\s+(.+))?/i;
 const EXPENSE_REGEX_ALT = /(?:r\$\s*)?(\d+[\.,]?\d*)\s*(?:reais?)?\s*(?:de|no?|na|com)\s+(.+)/i;
 
 // Remoção de gasto pelo Telegram
@@ -271,7 +271,9 @@ function tryRegex(text) {
   let match = EXPENSE_REGEX.exec(t) || EXPENSE_REGEX_ALT.exec(t);
   if (match) {
     const amount       = parseFloat(match[1].replace(',', '.'));
-    const description  = (match[2] || t).trim().replace(/\.$/, '');
+    const description  = (match[2] || t).trim()
+                          .replace(/\s*\b(?:ontem|hoje|anteontem|essa semana)\b\s*$/i, '')
+                          .replace(/\.$/, '').trim();
     const category     = detectCategory(description + ' ' + t);
     const installments = detectInstallments(t);
     console.log('⚡ [REGEX] expense →', { amount, description, category, installments });
