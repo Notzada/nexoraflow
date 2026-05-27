@@ -1,188 +1,159 @@
-# NexoraFlow — Guia de Instalação Local (VS Code)
+# NexoraFlow
 
-Dashboard de finanças e hábitos com bot Telegram, IA Gemini e Supabase.
+> **Finanças & Rotina — tudo em um só lugar.**  
+> Aplicação web fullstack para controle financeiro pessoal, tracking de hábitos, tarefas, gamificação e integração com IA e Telegram.
+
+🔗 **Demo ao vivo:** [nexoraflow-xbh6.onrender.com](https://nexoraflow-xbh6.onrender.com)
 
 ---
 
-## Estrutura do Projeto
+## 📸 Screenshots
+
+| Dashboard | Finanças | Ranking |
+|-----------|----------|---------|
+| ![Dashboard](screenshots/dashboard.png) | ![Finanças](screenshots/financas.png) | ![Ranking](screenshots/ranking.png) |
+
+| Agenda | Perfil & Tags | Loja |
+|--------|--------------|------|
+| ![Agenda](screenshots/agenda.png) | ![Perfil](screenshots/perfil.png) | ![Loja](screenshots/loja.png) |
+
+---
+
+## ✨ Funcionalidades
+
+### 💰 Finanças
+- Registro de gastos com categorias, parcelamento automático e tags de status
+- Metas financeiras com barra de progresso
+- Gráficos de evolução (7 dias / 30 dias / 12 meses) via Chart.js
+- Resumo mensal com saldo, maior gasto e total de transações
+
+### ✅ Hábitos & Tarefas
+- Tracking de hábitos diários com grid visual
+- Tarefas com datas limite e prioridades
+- Agenda mensal com eventos por categoria
+
+### 🤖 Assistente IA (NEXO)
+- Chat em linguagem natural com Google Gemini Flash
+- Detecta intenção e executa ações: registrar gasto, criar tarefa, marcar hábito
+- Totalmente em português
+
+### 📱 Bot Telegram
+- Registro de gastos por mensagem: *"gastei 50 no almoço em 3x"*
+- Consulta de saldo, hábitos e metas via comandos
+- Vinculação de conta por email
+
+### 🎮 Gamificação
+- Sistema de XP, níveis e streak diário com bônus em milestones
+- 25+ conquistas desbloqueáveis
+- Moeda interna (coins) e loja com temas e tags compráveis
+- Tags com raridade: Comum, Raro, Épico, Lendário
+
+### 👥 Social
+- Ranking semanal/mensal entre amigos por XP
+- Sistema de convites com código de referral
+- Perfil com conquistas, tags equipadas e progresso
+
+### 🔔 PWA & Notificações
+- Instalável como app (PWA)
+- Notificações push via Web Push + Service Worker
+
+---
+
+## 🛠️ Stack
+
+| Camada | Tecnologia |
+|--------|-----------|
+| Backend | Node.js 18+ + Express.js |
+| Banco de dados | Supabase (PostgreSQL) |
+| Autenticação | Supabase Auth + RLS |
+| IA | Google Gemini Flash |
+| Bot | Telegram Bot API (webhook) |
+| Frontend | HTML5 + CSS3 + JavaScript vanilla |
+| Gráficos | Chart.js v4 |
+| Hospedagem | Render |
+| PWA | Web Push + Service Worker |
+
+---
+
+## 🚀 Como rodar localmente
+
+### Pré-requisitos
+- Node.js 18+
+- Conta no [Supabase](https://supabase.com)
+- Chave de API do [Google AI Studio](https://aistudio.google.com)
+- Bot criado no Telegram via [@BotFather](https://t.me/BotFather)
+
+### Instalação
+
+```bash
+# Clone o repositório
+git clone https://github.com/Notzada/nexoraflow.git
+cd nexoraflow
+
+# Instale as dependências
+npm install
+
+# Configure as variáveis de ambiente
+cp .env.example .env
+# Edite o .env com suas chaves
+```
+
+### Variáveis de ambiente
+
+Crie um arquivo `.env` baseado no `.env.example`:
+
+```env
+SUPABASE_URL=
+SUPABASE_KEY=
+SUPABASE_SERVICE_KEY=
+GEMINI_KEY=
+TELEGRAM_TOKEN=
+WEBHOOK_URL=
+PORT=3000
+RESET_PASSWORD=
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+```
+
+### Executar
+
+```bash
+npm run dev     # Modo desenvolvimento (nodemon)
+npm start       # Modo produção
+```
+
+Acesse em `http://localhost:3000`
+
+---
+
+## 📁 Estrutura do projeto
 
 ```
 nexoraflow/
+├── index.js                  # Backend principal (Express + 50+ endpoints REST)
 ├── public/
-│   └── index.html        ← Frontend (Dashboard)
-├── index.js              ← Backend (Bot + API)
-├── package.json
-├── schema.sql            ← Execute no Supabase SQL Editor
-├── .env                  ← Suas credenciais (não suba para o Git!)
-├── .env.example          ← Modelo do .env
-├── .gitignore
-└── .vscode/
-    ├── launch.json       ← Configuração de debug no VS Code
-    └── settings.json
+│   ├── index.html            # Frontend SPA (dashboard, módulos, UI)
+│   ├── sw.js                 # Service Worker (notificações push)
+│   └── manifest.json         # Configuração PWA
+├── services/
+│   ├── xpService.js          # XP, níveis, streak
+│   ├── coinService.js        # Moeda interna, loja
+│   ├── achievementService.js # 25+ conquistas
+│   ├── rankingService.js     # Rankings semanais/mensais
+│   └── friendService.js      # Amigos e sistema de referral
+├── schema.sql                # Estrutura completa do banco
+├── .env.example              # Template de variáveis de ambiente
+└── PATCH_NOTES.md            # Histórico de versões
 ```
 
 ---
 
-## Pré-requisitos
+## 📄 Licença
 
-- [Node.js 18+](https://nodejs.org/) instalado
-- [VS Code](https://code.visualstudio.com/) instalado
-- Conta no [Supabase](https://app.supabase.com/) (gratuita)
-- Token de bot Telegram (via [@BotFather](https://t.me/BotFather))
-- Chave Gemini (via [aistudio.google.com](https://aistudio.google.com/apikey))
+Este projeto é de uso pessoal. Entre em contato para licenciamento ou colaboração.
 
 ---
 
-## Instalação Passo a Passo
-
-### 1. Abrir o projeto no VS Code
-
-```bash
-# Coloque todos os arquivos em uma pasta, ex: nexoraflow/
-# Abra o VS Code nessa pasta:
-code nexoraflow/
-```
-
----
-
-### 2. Instalar dependências
-
-Abra o terminal no VS Code (`Ctrl+`` ` ou `Terminal → New Terminal`):
-
-```bash
-npm install
-```
-
----
-
-### 3. Configurar o banco de dados (Supabase)
-
-1. Acesse [app.supabase.com](https://app.supabase.com) e crie um projeto
-2. Vá em **SQL Editor** e cole o conteúdo do arquivo `schema.sql`
-3. Clique em **Run**
-4. Anote:
-   - **Project URL**: `https://xxxx.supabase.co`
-   - **anon public key** (em Settings → API)
-
----
-
-### 4. Configurar variáveis de ambiente
-
-Copie o arquivo de exemplo:
-
-```bash
-# Windows (PowerShell)
-copy .env.example .env
-
-# Mac/Linux
-cp .env.example .env
-```
-
-Abra o `.env` no VS Code e preencha:
-
-```env
-TELEGRAM_TOKEN=7123456789:AAHxxxxxxxxxxxxxx
-SUPABASE_URL=https://xxxx.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5...
-GEMINI_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxxxxx
-WEBHOOK_URL=          ← deixe vazio por enquanto
-PORT=3000
-```
-
----
-
-### 5. Iniciar o servidor
-
-#### Opção A — Terminal:
-```bash
-npm run dev
-```
-
-#### Opção B — VS Code Debug (recomendado):
-1. Pressione `F5` ou clique no ícone de play (Run and Debug)
-2. Selecione **"▶ NexoraFlow (Dev)"**
-3. O servidor reinicia automaticamente ao salvar arquivos
-
-Você verá no terminal:
-```
-🚀 NexoraFlow rodando em http://localhost:3000
-📊 Dashboard: http://localhost:3000
-⚠️  WEBHOOK_URL não definido — bot Telegram inativo.
-```
-
----
-
-### 6. Acessar o Dashboard
-
-Abra o navegador em: **http://localhost:3000**
-
-Na tela de configuração, preencha:
-- **Supabase URL**
-- **Supabase Anon Key**
-- **Link do seu bot** (ex: `https://t.me/seu_bot`)
-
----
-
-### 7. Ativar o Bot do Telegram (com ngrok)
-
-Para o bot Telegram funcionar localmente, você precisa expor o servidor:
-
-#### Instalar ngrok:
-```bash
-# Com npm (mais fácil):
-npx ngrok http 3000
-```
-
-O ngrok vai gerar uma URL como:
-```
-https://abc123.ngrok-free.app
-```
-
-#### Atualizar o .env:
-```env
-WEBHOOK_URL=https://abc123.ngrok-free.app
-```
-
-Salve o arquivo — o nodemon reinicia o servidor e registra o webhook automaticamente.
-
-> ⚠️ O ngrok gera uma URL nova a cada vez que é iniciado.
-> Atualize o WEBHOOK_URL no .env sempre que reiniciar o ngrok.
-
----
-
-## Comandos disponíveis
-
-| Comando | O que faz |
-|---|---|
-| `npm run dev` | Inicia com hot-reload (nodemon) |
-| `npm start` | Inicia sem hot-reload |
-
----
-
-## Testando o Bot
-
-Com o servidor rodando e o ngrok ativo, vá no Telegram:
-
-```
-/start
-gastei 50 reais no almoço
-paguei 1200 de tv em 12x
-fiz academia hoje
-quanto gastei essa semana?
-remover último gasto
-minhas metas
-```
-
-O dashboard em http://localhost:3000 atualiza em tempo real!
-
----
-
-## Solução de Problemas
-
-| Problema | Solução |
-|---|---|
-| `Cannot find module 'dotenv'` | Rode `npm install` |
-| Dashboard não conecta | Verifique SUPABASE_URL e SUPABASE_KEY no .env |
-| Bot não responde | Verifique TELEGRAM_TOKEN e se o ngrok está rodando |
-| Porta em uso | Mude PORT=3001 no .env |
-| `WEBHOOK_URL não definido` | Normal sem ngrok — dashboard funciona normalmente |
+<p align="center">
+  Feito por <a href="https://github.com/Notzada">Diego Soares</a>
+</p>
