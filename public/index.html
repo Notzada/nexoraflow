@@ -1775,7 +1775,7 @@ body.theme-namorados .user-avatar{background:rgba(225,29,72,.15);border-color:rg
 // GLOBALS
 // ============================================
 const AUTO_URL = 'https://fdgstvivmquxgglbnlrc.supabase.co';
-const AUTO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkZ3N0dml2bXF1eGdnbGJubHJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5OTk5MjMsImV4cCI6MjA5MDU3NTkyM30.svTxYWkV_g_l5qg_-x7CgNXZvSxJApj34RgXRqNFI0Q';
+const AUTO_KEY = 'sb_publishable_7ZWrNCtYpk3tXTEwYcfNIA_iUQSOEsa';
 const AUTO_TG  = 'https://t.me/nexorahabit_bot';
 
 let supabaseClient = null;
@@ -1808,6 +1808,11 @@ window.addEventListener('load', async () => {
     if (event === 'SIGNED_IN' && session && !currentProfile) {
       currentUser = session.user;
       await loadProfileAndStart();
+    }
+    if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+      currentUser = null;
+      currentProfile = null;
+      showScreen('auth');
     }
   });
 });
@@ -1854,8 +1859,15 @@ function resetAuthBtn() {
 }
 
 async function loadProfileAndStart() {
-  const { data } = await supabaseClient
+  const { data, error } = await supabaseClient
     .from('user_profiles').select('*').eq('id', currentUser.id).single();
+  if (error && (error.status === 401 || error.status === 403)) {
+    await supabaseClient.auth.signOut();
+    currentUser = null;
+    currentProfile = null;
+    showScreen('auth');
+    return;
+  }
   if (data) {
     if (!data.email && currentUser.email) {
       await supabaseClient.from('user_profiles').update({ email: currentUser.email }).eq('id', currentUser.id);
