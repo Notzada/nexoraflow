@@ -289,8 +289,16 @@ function tryRegex(text) {
   let match = EXPENSE_REGEX.exec(t) || EXPENSE_REGEX_ALT.exec(t);
   if (match) {
     const amount       = parseFloat(match[1].replace(',', '.'));
-    const description  = (match[2] || t).trim()
-                          .replace(/\s*\b(?:ontem|hoje|anteontem|essa semana)\b\s*$/i, '')
+    const rawDesc      = match[2] || t
+      .replace(/(?:gastei|paguei|comprei|custou|cobrou|desembolsei|gasto de|gasto com)/gi, '')
+      .replace(/(?:r\$\s*)?\d+[\.,]?\d*\s*(?:reais?|r\$)?/i, '')
+      .replace(/\b[àa]s?\s+\d{1,2}:\d{2}\b/gi, '')
+      .replace(/\b(?:ontem|hoje|anteontem|essa semana)\b/gi, '')
+      .replace(/^\s*(?:com|de|no?|na|em|por|pelo?|pela)\s*/i, '')
+      .replace(/\s+/g, ' ').trim();
+    const description  = rawDesc
+                          .replace(/\s*\b(?:ontem|hoje|anteontem|essa semana)\b\s*/gi, ' ')
+                          .replace(/\b[àa]s?\s+\d{1,2}:\d{2}\b\s*/gi, '')
                           .replace(/\.$/, '').trim();
     const category     = detectCategory(description + ' ' + t);
     const installments = detectInstallments(t);
