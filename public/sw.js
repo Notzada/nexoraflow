@@ -1,5 +1,6 @@
 self.addEventListener('push', event => {
-  const data = event.data?.json() || {};
+  let data = {};
+  try { data = event.data?.json() || {}; } catch { data = { body: event.data?.text() || '' }; }
   event.waitUntil(
     self.registration.showNotification(data.title || 'NexoraFlow', {
       body: data.body || 'Você tem tarefas pendentes hoje!',
